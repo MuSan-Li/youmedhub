@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Home, Sparkles, FileText, Heart, Settings, LogIn, LogOut, User } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 import { useLocale } from '@/composables/useLocale'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import { useToast } from '@/components/ui/toast'
 import AuthDialog from '@/components/AuthDialog.vue'
 import {
@@ -119,6 +120,9 @@ function getInitials(name: string): string {
         <component :is="item.icon" class="h-5 w-5 shrink-0" />
         <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
       </button>
+
+      <!-- 语言切换 -->
+      <LanguageSwitcher :collapsed="collapsed" />
 
       <!-- 登录/用户菜单 -->
       <div class="mt-1">

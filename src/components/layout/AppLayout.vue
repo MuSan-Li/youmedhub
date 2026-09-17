@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppMenu from './AppMenu.vue'
-import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
 import { useLocale } from '@/composables/useLocale'
 
@@ -66,10 +65,6 @@ const configPanelWidth = computed(() => {
 
     <!-- 右侧：内容区 -->
     <main class="flex flex-1 flex-col overflow-hidden">
-      <!-- 内容区顶部工具栏：右侧语言切换 -->
-      <div class="flex h-10 shrink-0 items-center justify-end border-b bg-card px-3">
-        <LanguageSwitcher />
-      </div>
       <!-- 内容区主体 -->
       <div class="flex-1 overflow-y-auto">
         <slot name="content">

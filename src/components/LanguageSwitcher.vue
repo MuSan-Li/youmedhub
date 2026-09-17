@@ -8,6 +8,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+defineProps<{
+  collapsed?: boolean
+}>()
+
 const { locale, setLocale, t } = useLocale()
 
 const options: { value: Locale; label: string }[] = [
@@ -20,14 +24,15 @@ const options: { value: Locale; label: string }[] = [
   <DropdownMenu>
     <DropdownMenuTrigger as-child>
       <button
-        class="flex h-8 items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        :class="collapsed ? 'justify-center' : 'justify-start'"
         :aria-label="t('layout.language')"
       >
-        <Globe class="h-4 w-4" />
-        <span>{{ locale === 'zh' ? '中文' : 'EN' }}</span>
+        <Globe class="h-5 w-5 shrink-0" />
+        <span v-if="!collapsed" class="truncate">{{ locale === 'zh' ? '中文' : 'English' }}</span>
       </button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" :side-offset="4">
+    <DropdownMenuContent align="start" :side-offset="4" :collision-padding="8">
       <DropdownMenuItem
         v-for="option in options"
         :key="option.value"
