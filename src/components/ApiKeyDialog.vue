@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
+import { useLocale } from '@/composables/useLocale'
 import { Button } from '@/components/ui/button'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
@@ -10,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Settings } from 'lucide-vue-next'
 
 const { dashscopeApiKey, setDashscopeApiKey } = useVideoAnalysis()
+const { t } = useLocale()
 const open = ref(false)
 const inputDashscopeKey = ref(dashscopeApiKey.value)
 
@@ -28,19 +30,19 @@ function handleOpen() {
     <DialogTrigger as-child>
       <Button variant="outline" size="sm" @click="handleOpen">
         <Settings class="mr-2 h-4 w-4" />
-        API Key 设置
+        {{ t('apiKey.title') }}
       </Button>
     </DialogTrigger>
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>API Key 设置</DialogTitle>
+        <DialogTitle>{{ t('apiKey.title') }}</DialogTitle>
         <DialogDescription>
-          输入 API Key，Key 仅保存在浏览器本地。
+          {{ t('apiKey.description') }}
         </DialogDescription>
       </DialogHeader>
       <div class="space-y-4">
         <div class="space-y-2">
-          <label class="text-sm font-medium">阿里百炼 API Key</label>
+          <label class="text-sm font-medium">{{ t('apiKey.label') }}</label>
           <Input
             v-model="inputDashscopeKey"
             type="password"
@@ -49,8 +51,8 @@ function handleOpen() {
         </div>
       </div>
       <DialogFooter>
-        <Button variant="outline" @click="open = false">取消</Button>
-        <Button @click="handleSave">保存</Button>
+        <Button variant="outline" @click="open = false">{{ t('common.cancel') }}</Button>
+        <Button @click="handleSave">{{ t('common.save') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

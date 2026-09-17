@@ -4,6 +4,7 @@ import { generateWithImages } from '@/api/analysis'
 import { uploadToTemporaryFile } from '@/api/temporaryFile'
 import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
 import { useFavorites } from '@/composables/useFavorites'
+import { useLocale } from '@/composables/useLocale'
 import { AVAILABLE_MODELS } from '@/config/models'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -31,6 +32,7 @@ import { Loader2, Sparkles, AlertTriangle, Brain } from 'lucide-vue-next'
 
 const va = useVideoAnalysis()
 const favorites = useFavorites()
+const { locale, t } = useLocale()
 
 interface VideoTypeConfig {
   key: string
@@ -39,151 +41,63 @@ interface VideoTypeConfig {
   fields: Array<{ key: string; label: string }>
 }
 
+// 模板由字段标题生成，语言切换后自动跟随
+function templateFromFields(fields: Array<{ key: string; label: string }>): string {
+  return `${fields.map(f => `## ${f.label}`).join('\n\n\n')}\n`
+}
+
 // 删除使用场景类，增加自定义
-const videoTypes: VideoTypeConfig[] = [
-  {
-    key: 'free',
-    label: '自定义',
-    fields: [
-      { key: 'requirement', label: '视频要求' },
-    ],
-    template: `## 视频要求
+const videoTypes = computed<VideoTypeConfig[]>(() => {
+  const freeFields = [{ key: 'requirement', label: t('field.requirement') }]
+  const ecommerceFields = [
+    { key: 'productName', label: t('field.productName') },
+    { key: 'heroSpec', label: t('field.heroSpec') },
+    { key: 'coreSellingPoint', label: t('field.coreSellingPoint') },
+    { key: 'priceOffer', label: t('field.priceOffer') },
+    { key: 'targetAudience', label: t('field.targetAudience') },
+    { key: 'trustProof', label: t('field.trustProof') },
+    { key: 'cta', label: t('field.cta') },
+  ]
+  const sellingPointFields = [
+    { key: 'sellingPoint1', label: t('field.sellingPointN', { n: 1 }) },
+    { key: 'sellingPoint2', label: t('field.sellingPointN', { n: 2 }) },
+    { key: 'sellingPoint3', label: t('field.sellingPointN', { n: 3 }) },
+    { key: 'proofMethod', label: t('field.proofMethod') },
+    { key: 'priority', label: t('field.priority') },
+    { key: 'objectionHandling', label: t('field.objectionHandling') },
+  ]
+  const unboxingFields = [
+    { key: 'unboxingHighlight', label: t('field.unboxingHighlight') },
+    { key: 'reviewDimensions', label: t('field.reviewDimensions') },
+    { key: 'testScenario', label: t('field.testScenario') },
+    { key: 'prosCons', label: t('field.prosCons') },
+    { key: 'conclusion', label: t('field.conclusion') },
+    { key: 'targetUserFit', label: t('field.targetUserFit') },
+  ]
+  const comparisonFields = [
+    { key: 'comparisonTarget', label: t('field.comparisonTarget') },
+    { key: 'comparisonDimension', label: t('field.comparisonDimension') },
+    { key: 'baselineRule', label: t('field.baselineRule') },
+    { key: 'keyDifference', label: t('field.keyDifference') },
+    { key: 'recommendReason', label: t('field.recommendReason') },
+    { key: 'applicableAudience', label: t('field.applicableAudience') },
+    { key: 'purchaseAdvice', label: t('field.purchaseAdvice') },
+  ]
 
-在此自由描述你的视频需求，包括：
-- 产品/服务信息
-- 目标受众
-- 核心卖点
-- 风格调性
-- 时长要求
-`,
-  },
-  {
-    key: 'ecommerce',
-    label: '电商头图类',
-    fields: [
-      { key: 'productName', label: '商品名称' },
-      { key: 'heroSpec', label: '主打规格/型号' },
-      { key: 'coreSellingPoint', label: '核心卖点' },
-      { key: 'priceOffer', label: '价格/优惠信息' },
-      { key: 'targetAudience', label: '目标人群' },
-      { key: 'trustProof', label: '信任背书' },
-      { key: 'cta', label: '行动号召' },
-    ],
-    template: `## 商品名称
+  const freeTemplate = locale.value === 'en'
+    ? `## Video brief\n\nDescribe your video needs freely, including:\n- Product / service info\n- Target audience\n- Key selling points\n- Style & tone\n- Duration\n`
+    : `## 视频要求\n\n在此自由描述你的视频需求，包括：\n- 产品/服务信息\n- 目标受众\n- 核心卖点\n- 风格调性\n- 时长要求\n`
 
+  return [
+    { key: 'free', label: t('videoType.free'), fields: freeFields, template: freeTemplate },
+    { key: 'ecommerce', label: t('videoType.ecommerce'), fields: ecommerceFields, template: templateFromFields(ecommerceFields) },
+    { key: 'sellingPoint', label: t('videoType.sellingPoint'), fields: sellingPointFields, template: templateFromFields(sellingPointFields) },
+    { key: 'unboxing', label: t('videoType.unboxing'), fields: unboxingFields, template: templateFromFields(unboxingFields) },
+    { key: 'comparison', label: t('videoType.comparison'), fields: comparisonFields, template: templateFromFields(comparisonFields) },
+  ]
+})
 
-## 主打规格/型号
-
-
-## 核心卖点
-
-
-## 价格/优惠信息
-
-
-## 目标人群
-
-
-## 信任背书
-
-
-## 行动号召
-`,
-  },
-  {
-    key: 'sellingPoint',
-    label: '卖点展示类',
-    fields: [
-      { key: 'sellingPoint1', label: '卖点 1' },
-      { key: 'sellingPoint2', label: '卖点 2' },
-      { key: 'sellingPoint3', label: '卖点 3' },
-      { key: 'proofMethod', label: '证明方式' },
-      { key: 'priority', label: '卖点优先级' },
-      { key: 'objectionHandling', label: '常见疑虑处理' },
-    ],
-    template: `## 卖点 1
-
-
-## 卖点 2
-
-
-## 卖点 3
-
-
-## 证明方式
-
-
-## 卖点优先级
-
-
-## 常见疑虑处理
-`,
-  },
-  {
-    key: 'unboxing',
-    label: '开箱测评类',
-    fields: [
-      { key: 'unboxingHighlight', label: '开箱亮点' },
-      { key: 'reviewDimensions', label: '测评维度' },
-      { key: 'testScenario', label: '实测场景' },
-      { key: 'prosCons', label: '优缺点' },
-      { key: 'conclusion', label: '结论倾向' },
-      { key: 'targetUserFit', label: '适配人群' },
-    ],
-    template: `## 开箱亮点
-
-
-## 测评维度
-
-
-## 实测场景
-
-
-## 优缺点
-
-
-## 结论倾向
-
-
-## 适配人群
-`,
-  },
-  {
-    key: 'comparison',
-    label: '对比种草类',
-    fields: [
-      { key: 'comparisonTarget', label: '对比对象' },
-      { key: 'comparisonDimension', label: '对比维度' },
-      { key: 'baselineRule', label: '对比标准' },
-      { key: 'keyDifference', label: '关键差异' },
-      { key: 'recommendReason', label: '推荐理由' },
-      { key: 'applicableAudience', label: '适用人群' },
-      { key: 'purchaseAdvice', label: '购买建议' },
-    ],
-    template: `## 对比对象
-
-
-## 对比维度
-
-
-## 对比标准
-
-
-## 关键差异
-
-
-## 推荐理由
-
-
-## 适用人群
-
-
-## 购买建议
-`,
-  },
-]
-
-const selectedVideoType = ref(videoTypes[0]?.key || '')
+const selectedVideoType = ref(videoTypes.value[0]?.key || '')
 const requirementText = ref('')
 const hasUserEdited = ref(false)
 
@@ -202,7 +116,7 @@ const scriptCount = ref('1')
 const selectedFavoriteId = ref('_none')
 
 const selectedVideoTypeConfig = computed(() =>
-  videoTypes.find(item => item.key === selectedVideoType.value) || null
+  videoTypes.value.find(item => item.key === selectedVideoType.value) || null
 )
 
 const selectedFavorite = computed(() => {
@@ -221,7 +135,7 @@ const scriptCountNumber = computed(() => {
 })
 
 const selectedModelId = computed({
-  get: () => va.selectedModel.value?.id || 'qwen3.5-flash',
+  get: () => va.selectedModel.value?.id || 'qwen3.8-flash',
   set: (val: string) => {
     const oldModelId = va.selectedModel.value?.id
     const model = AVAILABLE_MODELS.find(m => m.id === val)
@@ -229,7 +143,7 @@ const selectedModelId = computed({
       va.setSelectedModel(model)
       // 如果模型变化且有已上传的文件，显示提示
       if (oldModelId && oldModelId !== val && va.imageUrls.value.length > 0) {
-        modelChangeMessage.value = '已切换模型，图片与模型绑定，提交时将重新上传'
+        modelChangeMessage.value = t('panel.modelChangedImages')
         setTimeout(() => {
           modelChangeMessage.value = ''
         }, 5000)
@@ -250,8 +164,8 @@ const enableThinking = computed({
 const imageHint = computed(() => {
   const count = va.imageFiles.value.length
   if (count === 0) return ''
-  const refs = Array.from({ length: count }, (_, i) => `@图${i + 1}`).join(' ')
-  return `可使用 ${refs} 引用图片`
+  const refs = Array.from({ length: count }, (_, i) => `@${t('panel.imageRefTag', { n: i + 1 })}`).join(' ')
+  return t('panel.imageHint', { refs })
 })
 
 const canGenerate = computed(() => {
@@ -277,7 +191,7 @@ function handleVideoTypeChange(typeKey: string) {
 }
 
 function applyVideoType(typeKey: string) {
-  const config = videoTypes.find(item => item.key === typeKey)
+  const config = videoTypes.value.find(item => item.key === typeKey)
   if (!config) return
 
   selectedVideoType.value = typeKey
@@ -350,7 +264,7 @@ function buildAiOptimizePrompt(): string {
 6. 如果原内容为空或不够具体，请根据视频类型补齐合理的建议内容。
 7. 保持专业、简洁的表达风格。
 8. 如果有参考图片，请结合图片内容进行优化。
-
+${locale.value === 'en' ? '9. Write the optimized content in English (translate field titles and content accordingly).\n' : ''}
 视频类型：${config.label}
 当前字段内容：
 ${fieldsDesc}
@@ -361,11 +275,11 @@ ${fieldsDesc}
 
 async function handleAiOptimize() {
   if (!va.currentApiKey.value) {
-    aiOptimizeError.value = '请先配置阿里百炼 API Key'
+    aiOptimizeError.value = t('analyze.apiKeyRequired')
     return
   }
   if (!selectedVideoTypeConfig.value) {
-    aiOptimizeError.value = '请先选择视频类型'
+    aiOptimizeError.value = t('panel.aiOptimizeNoType')
     return
   }
 
@@ -378,10 +292,10 @@ async function handleAiOptimize() {
   try {
     // 1. 上传图片到临时存储（如果有的话，与模型绑定）
     const uploadedImageUrls: string[] = []
-    const model = va.selectedModel.value?.id || 'qwen3.5-flash'
+    const model = va.selectedModel.value?.id || 'qwen3.8-flash'
     const apiKey = va.currentApiKey.value
     if (!apiKey) {
-      throw new Error('请先配置阿里百炼 API Key')
+      throw new Error(t('analyze.apiKeyRequired'))
     }
     for (let i = 0; i < va.imageFiles.value.length; i++) {
       const file = va.imageFiles.value[i]
@@ -400,12 +314,12 @@ async function handleAiOptimize() {
     // 2. 构建提示词
     const prompt = buildAiOptimizePrompt()
 
-    // 3. 调用 AI（流式）- qwen3.5 系列支持多模态
+    // 3. 调用 AI（流式）- qwen3.8 系列支持多模态
     if (uploadedImageUrls.length > 0) {
       // 有图片，使用多模态 API
       await generateWithImages({
         apiKey: va.currentApiKey.value,
-        model: 'qwen3.5-flash',
+        model: 'qwen3.8-flash',
         prompt,
         imageUrls: uploadedImageUrls,
         onChunk: (chunk) => {
@@ -419,7 +333,7 @@ async function handleAiOptimize() {
       const { generateText } = await import('@/api/analysis')
       await generateText({
         apiKey: va.currentApiKey.value,
-        model: 'qwen3.5-flash',
+        model: 'qwen3.8-flash',
         prompt,
         onChunk: (chunk) => {
           streamedContent += chunk
@@ -431,7 +345,7 @@ async function handleAiOptimize() {
 
     hasUserEdited.value = true
   } catch (error) {
-    aiOptimizeError.value = error instanceof Error ? error.message : 'AI 优化失败，请重试'
+    aiOptimizeError.value = error instanceof Error ? error.message : t('panel.aiOptimizeFail')
   } finally {
     aiOptimizing.value = false
   }
@@ -440,8 +354,8 @@ async function handleAiOptimize() {
 onMounted(() => {
   favorites.loadFavorites()
 
-  if (videoTypes[0]) {
-    requirementText.value = videoTypes[0].template
+  if (videoTypes.value[0]) {
+    requirementText.value = videoTypes.value[0].template
   }
 
   if (va.pendingReference.value.trim()) {
@@ -473,13 +387,13 @@ defineExpose({
   <div class="space-y-4">
     <!-- 参考图片 - 放在最上方 -->
     <div class="space-y-2">
-      <Label class="text-xs font-normal text-muted-foreground">参考图片</Label>
+      <Label class="text-xs font-normal text-muted-foreground">{{ t('panel.referenceImage') }}</Label>
       <ImageUploader />
     </div>
 
     <!-- 视频类型选择 -->
     <div class="space-y-2">
-      <Label class="text-xs font-normal text-muted-foreground">视频类型</Label>
+      <Label class="text-xs font-normal text-muted-foreground">{{ t('panel.videoType') }}</Label>
       <div class="flex flex-wrap gap-1.5">
         <button
           v-for="item in videoTypes"
@@ -499,7 +413,7 @@ defineExpose({
     <!-- 视频要求 -->
     <div class="space-y-2">
       <div class="flex items-center justify-between">
-        <Label class="text-xs font-normal text-muted-foreground">视频要求</Label>
+        <Label class="text-xs font-normal text-muted-foreground">{{ t('panel.videoRequirement') }}</Label>
         <Button
           variant="ghost"
           size="sm"
@@ -509,14 +423,14 @@ defineExpose({
         >
           <Loader2 v-if="aiOptimizing" class="mr-1 h-3 w-3 animate-spin" />
           <Sparkles v-else class="mr-1 h-3 w-3" />
-          AI 优化
+          {{ t('panel.aiOptimize') }}
         </Button>
       </div>
       <Textarea
         v-model="requirementText"
         rows="10"
         class="font-mono text-sm"
-        placeholder="在每个标题下方填写对应内容..."
+        :placeholder="t('panel.requirementPlaceholder')"
         @input="handleTextareaInput"
       />
       <div class="flex items-center justify-between">
@@ -524,7 +438,7 @@ defineExpose({
           {{ imageHint }}
         </p>
         <p v-else class="text-[10px] text-muted-foreground">
-          在 ## 标题下方填写内容
+          {{ t('panel.requirementHint') }}
         </p>
       </div>
       <p v-if="aiOptimizeError" class="text-xs text-destructive">
@@ -534,14 +448,14 @@ defineExpose({
 
     <!-- 参考脚本 - 直接下拉选择收藏 -->
     <div class="space-y-2">
-      <Label class="text-xs font-normal text-muted-foreground">参考脚本（可选）</Label>
+      <Label class="text-xs font-normal text-muted-foreground">{{ t('panel.referenceScript') }}</Label>
       <Select v-model="selectedFavoriteId">
         <SelectTrigger class="h-8">
-          <SelectValue placeholder="选择收藏脚本作为参考" />
+          <SelectValue :placeholder="t('panel.selectFavoritePlaceholder')" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="_none">
-            不使用参考
+            {{ t('panel.noReference') }}
           </SelectItem>
           <SelectItem
             v-for="item in favorites.favorites.value"
@@ -553,24 +467,24 @@ defineExpose({
         </SelectContent>
       </Select>
       <p v-if="favorites.favorites.value.length === 0" class="text-[10px] text-muted-foreground">
-        暂无收藏脚本，请先在「拆解脚本」页面收藏
+        {{ t('panel.noFavoritesHint') }}
       </p>
     </div>
 
     <!-- 时长和数量 -->
     <div class="grid grid-cols-2 gap-3">
       <div class="space-y-2">
-        <Label class="text-xs font-normal text-muted-foreground">目标时长</Label>
+        <Label class="text-xs font-normal text-muted-foreground">{{ t('panel.durationLabel') }}</Label>
         <Input
           v-model="duration"
           type="text"
-          placeholder="30 秒"
+          :placeholder="t('panel.durationPlaceholder')"
           class="h-8"
         />
       </div>
 
       <div class="space-y-2">
-        <Label class="text-xs font-normal text-muted-foreground">脚本数量</Label>
+        <Label class="text-xs font-normal text-muted-foreground">{{ t('panel.scriptCountLabel') }}</Label>
         <div class="flex gap-1.5">
           <button
             v-for="n in 3"
@@ -590,11 +504,11 @@ defineExpose({
 
     <!-- 模型选择 + 思考模式（一行，各占 50%） -->
     <div class="space-y-2">
-      <Label class="text-xs font-normal text-muted-foreground">模型选择</Label>
+      <Label class="text-xs font-normal text-muted-foreground">{{ t('analyze.modelLabel') }}</Label>
       <div class="flex items-center gap-3">
         <Select v-model="selectedModelId" class="flex-1">
           <SelectTrigger class="h-8 w-full">
-            <SelectValue placeholder="选择模型" />
+            <SelectValue :placeholder="t('analyze.selectModel')" />
           </SelectTrigger>
           <SelectContent class="max-w-[50vw]">
             <SelectItem
@@ -617,7 +531,7 @@ defineExpose({
           @click="enableThinking = !enableThinking"
         >
           <Brain class="h-4 w-4 text-purple-500" />
-          <span class="text-purple-700">思考</span>
+          <span class="text-purple-700">{{ t('analyze.thinking') }}</span>
         </Button>
       </div>
     </div>
@@ -627,7 +541,7 @@ defineExpose({
     </div>
 
     <div v-if="!va.currentApiKey.value" class="rounded-md bg-muted p-2 text-[10px] text-muted-foreground">
-      请先配置阿里百炼 API Key
+      {{ t('analyze.apiKeyRequired') }}
     </div>
 
     <!-- 覆盖确认弹窗 -->
@@ -636,15 +550,15 @@ defineExpose({
         <AlertDialogHeader>
           <AlertDialogTitle class="flex items-center gap-2">
             <AlertTriangle class="h-5 w-5 text-yellow-500" />
-            切换视频类型
+            {{ t('panel.overwriteTitle') }}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            切换视频类型会覆盖当前填写的内容，确定要切换吗？
+            {{ t('panel.overwriteDesc') }}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel @click="cancelOverwrite">取消</AlertDialogCancel>
-          <AlertDialogAction @click="confirmOverwrite">确定切换</AlertDialogAction>
+          <AlertDialogCancel @click="cancelOverwrite">{{ t('panel.overwriteCancel') }}</AlertDialogCancel>
+          <AlertDialogAction @click="confirmOverwrite">{{ t('panel.overwriteConfirm') }}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

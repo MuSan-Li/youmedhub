@@ -7,8 +7,10 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { Brain, ChevronDown, ChevronUp, Loader2 } from 'lucide-vue-next'
+import { useLocale } from '@/composables/useLocale'
 
 const va = useVideoAnalysis()
+const { t } = useLocale()
 
 // 面板展开状态
 const isOpen = ref(true)
@@ -41,9 +43,9 @@ watch(() => va.thinkingContent.value, () => {
     <CollapsibleTrigger class="flex w-full items-center justify-between p-3 text-sm hover:bg-muted/50">
       <div class="flex items-center gap-2">
         <Brain class="h-4 w-4 text-purple-500" />
-        <span class="font-medium">思考过程</span>
+        <span class="font-medium">{{ t('thinking.title') }}</span>
         <Loader2 v-if="va.isThinking.value" class="h-3 w-3 animate-spin text-purple-500" />
-        <span v-if="va.isThinking.value" class="text-xs text-muted-foreground">思考中...</span>
+        <span v-if="va.isThinking.value" class="text-xs text-muted-foreground">{{ t('thinking.thinking') }}</span>
       </div>
       <ChevronDown v-if="!isOpen" class="h-4 w-4" />
       <ChevronUp v-else class="h-4 w-4" />

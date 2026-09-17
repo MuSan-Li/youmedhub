@@ -16,9 +16,11 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Brain, Sparkles, FileText, ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { useLocale } from '@/composables/useLocale'
 
 const va = useVideoAnalysis()
 const favorites = useFavorites()
+const { t } = useLocale()
 
 // 创作参数
 const topic = ref('')
@@ -52,7 +54,7 @@ const enableThinkingModel = computed({
 
 // 模型选择
 const selectedModelId = computed({
-  get: () => va.selectedModel.value?.id || 'qwen3.5-flash',
+  get: () => va.selectedModel.value?.id || 'qwen3.8-flash',
   set: (val: string) => {
     const model = AVAILABLE_MODELS.find(m => m.id === val)
     if (model) {
@@ -113,16 +115,16 @@ defineExpose({
     <div class="space-y-2">
       <Label for="topic" class="flex items-center gap-2">
         <Sparkles class="h-4 w-4" />
-        新主题
+        {{ t('reference.newTopic') }}
       </Label>
       <Input
         id="topic"
         v-model="topic"
-        placeholder="例如：分享一个健身增肌的小技巧"
+        :placeholder="t('reference.topicPlaceholder')"
         maxlength="100"
       />
       <p class="text-xs text-muted-foreground">
-        描述你想创作的新主题（风格将参考已有脚本）
+        {{ t('reference.topicHint') }}
       </p>
     </div>
 
@@ -130,7 +132,7 @@ defineExpose({
     <div class="space-y-2">
       <Label class="flex items-center gap-2">
         <FileText class="h-4 w-4" />
-        参考脚本来源
+        {{ t('reference.source') }}
       </Label>
       <div class="flex gap-2">
         <Button
@@ -138,39 +140,39 @@ defineExpose({
           size="sm"
           @click="referenceSource = 'input'"
         >
-          手动输入
+          {{ t('reference.manualInput') }}
         </Button>
         <Button
           :variant="referenceSource === 'favorite' ? 'default' : 'outline'"
           size="sm"
           @click="referenceSource = 'favorite'"
         >
-          从收藏选择
+          {{ t('reference.fromFavorite') }}
         </Button>
       </div>
     </div>
 
     <!-- 手动输入参考脚本 -->
     <div v-if="referenceSource === 'input'" class="space-y-2">
-      <Label for="reference">参考脚本</Label>
+      <Label for="reference">{{ t('reference.scriptLabel') }}</Label>
       <Textarea
         id="reference"
         v-model="referenceScript"
-        placeholder="粘贴已有的分镜脚本（Markdown 表格格式）..."
+        :placeholder="t('reference.scriptPlaceholder')"
         rows="6"
         maxlength="10000"
       />
       <p class="text-xs text-muted-foreground">
-        粘贴一份你满意的脚本，AI 将学习其风格
+        {{ t('reference.scriptHint') }}
       </p>
     </div>
 
     <!-- 从收藏选择 -->
     <div v-else class="space-y-2">
-      <Label>选择收藏脚本</Label>
+      <Label>{{ t('reference.selectFavorite') }}</Label>
       <Select v-model="selectedFavoriteId" @update:model-value="loadFromFavorite">
         <SelectTrigger>
-          <SelectValue placeholder="选择一个收藏的脚本" />
+          <SelectValue :placeholder="t('reference.selectFavoritePlaceholder')" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem
@@ -183,21 +185,21 @@ defineExpose({
         </SelectContent>
       </Select>
       <p v-if="favorites.favorites.value.length === 0" class="text-xs text-muted-foreground">
-        暂无收藏脚本，请先收藏一些脚本
+        {{ t('reference.noFavorites') }}
       </p>
     </div>
 
     <!-- 参考脚本预览 -->
     <div v-if="referencePreview" class="space-y-2">
       <div class="flex items-center justify-between">
-        <Label class="text-muted-foreground text-xs">参考脚本预览</Label>
+        <Label class="text-muted-foreground text-xs">{{ t('reference.preview') }}</Label>
         <Button
           variant="ghost"
           size="sm"
           class="h-6 px-2"
           @click="isScriptExpanded = !isScriptExpanded"
         >
-          {{ isScriptExpanded ? '收起' : '展开' }}
+          {{ isScriptExpanded ? t('reference.collapse') : t('reference.expand') }}
           <ChevronUp v-if="isScriptExpanded" class="h-3 w-3 ml-1" />
           <ChevronDown v-else class="h-3 w-3 ml-1" />
         </Button>
@@ -212,11 +214,11 @@ defineExpose({
 
     <!-- 补充说明 -->
     <div class="space-y-2">
-      <Label for="notes">补充说明（可选）</Label>
+      <Label for="notes">{{ t('reference.notes') }}</Label>
       <Textarea
         id="notes"
         v-model="additionalNotes"
-        placeholder="例如：需要保留原脚本的快节奏剪辑风格..."
+        :placeholder="t('reference.notesPlaceholder')"
         rows="2"
         maxlength="500"
       />
@@ -227,7 +229,7 @@ defineExpose({
       <!-- 模型选择 -->
       <Select v-model="selectedModelId">
         <SelectTrigger class="h-8 w-auto min-w-[140px]">
-          <SelectValue placeholder="选择模型" />
+          <SelectValue :placeholder="t('analyze.selectModel')" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem
@@ -252,7 +254,7 @@ defineExpose({
 
     <!-- API Key 状态提示 -->
     <div v-if="!va.currentApiKey.value" class="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-      请先配置阿里百炼 API Key
+      {{ t('analyze.apiKeyRequired') }}
     </div>
   </div>
 </template>

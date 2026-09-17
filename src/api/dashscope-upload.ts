@@ -29,7 +29,7 @@ export interface UploadPolicyResponse {
 // 上传选项
 export interface UploadOptions {
   file: File
-  model: string // 目标模型，如 'qwen-vl-max' 或 'qwen3.5-plus'
+  model: string // 目标模型，如 'qwen-vl-max' 或 'qwen3.8-max'
   apiKey?: string // 可选，默认从环境变量 VITE_DASHSCOPE_API_KEY 读取
   onProgress?: (loaded: number, total: number) => void
 }
@@ -41,6 +41,8 @@ export interface UploadResult {
 }
 
 // 代理接口地址（用于获取上传凭证，解决 CORS）
+import { useLocale } from '@/composables/useLocale'
+
 const PROXY_BASE_URL = '/api'
 
 /**
@@ -228,7 +230,7 @@ export function validateFile(
     })
     return {
       isValid: false,
-      error: `不支持的文件格式。请使用 ${typeNames.join('/')} 格式的文件。`,
+      error: useLocale().t('api.unsupportedFormat', { types: typeNames.join('/') }),
     }
   }
 
@@ -237,7 +239,7 @@ export function validateFile(
   if (file.size > maxSize) {
     return {
       isValid: false,
-      error: `文件过大（${formatFileSize(file.size)}），请选择小于 ${maxSizeMB || 100}MB 的文件。`,
+      error: useLocale().t('api.fileTooLarge', { size: formatFileSize(file.size), max: maxSizeMB || 100 }),
     }
   }
 
@@ -245,7 +247,7 @@ export function validateFile(
   if (file.size === 0) {
     return {
       isValid: false,
-      error: '文件为空，请选择有效的文件。',
+      error: useLocale().t('api.fileEmpty'),
     }
   }
 
@@ -296,38 +298,39 @@ export function formatFileSize(bytes: number): string {
  * @returns 用户友好的错误信息
  */
 export function parseUploadError(error: unknown): string {
+  const { t } = useLocale()
   if (error instanceof Error) {
     const message = error.message
 
     // 网络错误
     if (message.includes('Failed to fetch') || message.includes('Network')) {
-      return '网络连接失败，请检查网络连接后重试'
+      return t('api.networkError')
     }
 
     // 凭证过期
     if (message.includes('expire') || message.includes('Expired')) {
-      return '上传凭证已过期，请重新上传'
+      return t('api.credentialExpired')
     }
 
     // 限流
     if (message.includes('rate limit') || message.includes('RateLimit')) {
-      return '上传太频繁，请稍后再试'
+      return t('api.uploadThrottling')
     }
 
     // 文件过大
     if (message.includes('size') || message.includes('Size')) {
-      return '文件过大，请选择更小的文件'
+      return t('api.fileTooLargeShort')
     }
 
     // API Key 错误
     if (message.includes('Unauthorized') || message.includes('401')) {
-      return 'API Key 无效，请检查配置'
+      return t('api.invalidApiKey')
     }
 
     return message
   }
 
-  return '上传失败，请重试'
+  return t('api.uploadFail')
 }
 
 // 保留旧的接口兼容（temporaryFile.ts 将调用此模块）

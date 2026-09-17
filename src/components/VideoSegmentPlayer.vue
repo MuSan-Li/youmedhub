@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { parseTimeToSeconds } from '@/utils/videoCapture'
+import { useLocale } from '@/composables/useLocale'
+
+const { t } = useLocale()
 
 const props = defineProps<{
   src: string
@@ -56,7 +59,7 @@ function onTimeUpdate() {
       v-if="!src"
       class="flex h-20 w-full items-center justify-center rounded border border-dashed text-xs text-muted-foreground"
     >
-      当前来源不支持预览
+      {{ t('preview.unsupportedSource') }}
     </div>
     <video
       v-else

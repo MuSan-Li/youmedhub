@@ -7,21 +7,24 @@ import {
   type AnalysisMode,
   type CreatePromptContext,
   type ReferencePromptContext,
+  type OutputLocale,
 } from '../prompts/videoAnalysis'
 import * as analysis from './analysis'
 import type { ModelConfig } from '@/config/models'
 import { AVAILABLE_MODELS, MODELS_BY_PROVIDER, getModelById } from '@/config/models'
+import { useLocale } from '@/composables/useLocale'
 
 // 导出提示词供组件使用
 export { VIDEO_ANALYSIS_PROMPT, buildPromptByMode, getPromptByMode }
-export type { AnalysisMode, CreatePromptContext, ReferencePromptContext }
+export type { AnalysisMode, CreatePromptContext, ReferencePromptContext, OutputLocale }
 
 // 导出模型相关
 export { AVAILABLE_MODELS, MODELS_BY_PROVIDER, getModelById }
 export type { ModelConfig }
 
 // AI 模型类型
-export type AIModel = 'qwen3.5-flash' | 'qwen3.5-plus'
+// 注意：qwen3.7-max 为纯文本模型，不支持视频/图片输入，不在此列
+export type AIModel = 'qwen3.8-flash' | 'qwen3.8-max' | 'qwen3.7-flash' | 'qwen3.7-plus'
 
 // 流式输出回调类型
 export type StreamCallback = (chunk: string) => void
@@ -41,6 +44,7 @@ interface BaseRequestOptions {
   apiKey: string
   model?: AIModel
   customPrompt?: string
+  locale?: OutputLocale
   onProgress?: (message: string) => void
   onStream?: StreamCallback
   onTokenUsage?: TokenUsageCallback
@@ -67,22 +71,30 @@ export type GenerateScriptOptions = GenerateCreateScriptOptions | GenerateRefere
 
 // 解析 Markdown 表格转换为 JSON
 function parseMarkdownTable(markdown: string): VideoAnalysisResponse {
+  const { t } = useLocale()
   const lines = markdown.trim().split('\n')
   const rep: VideoAnalysisResponse['rep'] = []
 
   // 找到表格开始位置（包含表头的行）
-  // 兼容两种表头格式：'运镜方式' 或 '运镜'
+  // 中文表头：兼容 '运镜方式' 或 '运镜'
+  // 英文表头：'No.' + 'Shot' + 'Camera'
+  const isHeaderLine = (line: string): boolean => {
+    if (!line) return false
+    const isZh = line.includes('序号') && line.includes('景别') && (line.includes('运镜方式') || line.includes('运镜'))
+    const isEn = line.includes('No.') && line.includes('Shot') && line.includes('Camera')
+    return isZh || isEn
+  }
+
   let tableStartIndex = -1
   for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i]
-    if (line && line.includes('序号') && line.includes('景别') && (line.includes('运镜方式') || line.includes('运镜'))) {
+    if (isHeaderLine(lines[i])) {
       tableStartIndex = i
       break
     }
   }
 
   if (tableStartIndex === -1) {
-    throw new Error('未找到有效的 Markdown 表格')
+    throw new Error(t('api.noTable'))
   }
 
   // 跳过表头和分隔线，从数据行开始解析
@@ -113,7 +125,7 @@ function parseMarkdownTable(markdown: string): VideoAnalysisResponse {
   }
 
   if (rep.length === 0) {
-    throw new Error('未能解析出有效的数据行')
+    throw new Error(t('api.noRows'))
   }
 
   return { rep }
@@ -121,34 +133,36 @@ function parseMarkdownTable(markdown: string): VideoAnalysisResponse {
 
 // 解析错误信息
 function parseErrorMessage(error: unknown): string {
+  const { t } = useLocale()
   if (!(error instanceof Error)) {
-    return 'API 请求失败，请重试'
+    return t('api.requestFail')
   }
 
   const message = error.message || ''
 
   if (message.includes('SafetyError') || message.includes('DataInspection')) {
-    return '内容安全检查未通过，请尝试调整输入内容'
+    return t('api.safetyError')
   }
   if (message.includes('InvalidParameter')) {
-    return '参数无效，请检查输入内容和模型参数'
+    return t('api.invalidParameter')
   }
   if (message.includes('TooLarge') || message.includes('size') || message.includes('Exceeded limit')) {
-    return '输入内容过大，请精简后重试'
+    return t('api.tooLarge')
   }
   if (message.includes('AuthenticationNotPass') || message.includes('401')) {
-    return 'API Key 验证失败，请检查 API Key 是否正确'
+    return t('api.authFail')
   }
   if (message.includes('Throttling')) {
-    return 'API 请求频率过高，请稍后重试'
+    return t('api.throttling')
   }
 
-  return message || 'API 请求失败，请重试'
+  return message || t('api.requestFail')
 }
 
 function resolvePrompt(
   mode: AnalysisMode,
-  customPrompt?: string,
+  customPrompt: string | undefined,
+  locale: OutputLocale,
   context?: CreatePromptContext | ReferencePromptContext
 ): string {
   const normalizedCustomPrompt = customPrompt?.trim()
@@ -160,17 +174,17 @@ function resolvePrompt(
     if (!context || !('topic' in context)) {
       throw new Error('从零创作模式缺少创作参数')
     }
-    return buildPromptByMode('create', context)
+    return buildPromptByMode('create', context, locale)
   }
 
   if (mode === 'reference') {
     if (!context || !('referenceScript' in context)) {
       throw new Error('参考生成模式缺少参考脚本')
     }
-    return buildPromptByMode('reference', context)
+    return buildPromptByMode('reference', context, locale)
   }
 
-  return getPromptByMode('analyze')
+  return getPromptByMode('analyze', locale)
 }
 
 // 使用视频 URL 分析（核心分析逻辑）
@@ -185,7 +199,8 @@ async function analyzeVideoByUrl(
   params?: AnalysisParams,
   onReasoning?: ReasoningCallback
 ): Promise<VideoAnalysisResponse> {
-  onProgress?.('正在调用 AI 分析视频...')
+  const { t } = useLocale()
+  onProgress?.(t('api.callingAi'))
 
   const fullContent = await analysis.analyzeVideo({
     model,
@@ -198,7 +213,7 @@ async function analyzeVideoByUrl(
     onReasoningChunk: onReasoning,
   })
 
-  onProgress?.('正在解析分析结果...')
+  onProgress?.(t('api.parsingResult'))
   return parseMarkdownTable(fullContent)
 }
 
@@ -214,16 +229,17 @@ async function analyzeVideoByTemporaryFile(
   params?: AnalysisParams,
   onReasoning?: ReasoningCallback
 ): Promise<VideoAnalysisResponse> {
+  const { t } = useLocale()
   const validation = validateVideoFile(file)
   if (!validation.isValid) {
     throw new Error(validation.error)
   }
 
-  onProgress?.('正在上传视频到临时存储...')
+  onProgress?.(t('api.uploadingTemp'))
 
   const uploadResult = await uploadToTemporaryFile(file, model, apiKey)
 
-  onProgress?.('视频上传成功，正在调用 AI 分析...')
+  onProgress?.(t('api.uploadedCallingAi'))
 
   return analyzeVideoByUrl(
     uploadResult.downloadLink,
@@ -243,9 +259,10 @@ export async function analyzeVideo(options: AnalyzeVideoOptions): Promise<VideoA
   const {
     source,
     apiKey,
-    model = 'qwen3.5-plus',
+    model = 'qwen3.8-max',
     mode = 'analyze',
     customPrompt,
+    locale = 'zh',
     onProgress,
     onStream,
     onTokenUsage,
@@ -253,7 +270,7 @@ export async function analyzeVideo(options: AnalyzeVideoOptions): Promise<VideoA
     onReasoning,
   } = options
 
-  const prompt = resolvePrompt(mode, customPrompt)
+  const prompt = resolvePrompt(mode, customPrompt, locale)
 
   try {
     if (typeof source === 'string') {
@@ -270,10 +287,11 @@ export async function analyzeVideo(options: AnalyzeVideoOptions): Promise<VideoA
 export async function generateScript(options: GenerateScriptOptions): Promise<VideoAnalysisResponse> {
   const {
     apiKey,
-    model = 'qwen3.5-plus',
+    model = 'qwen3.8-max',
     mode,
     context,
     customPrompt,
+    locale = 'zh',
     onProgress,
     onStream,
     onTokenUsage,
@@ -281,8 +299,9 @@ export async function generateScript(options: GenerateScriptOptions): Promise<Vi
     onReasoning,
   } = options
 
-  const prompt = resolvePrompt(mode, customPrompt, context)
-  onProgress?.('正在调用 AI 生成脚本...')
+  const prompt = resolvePrompt(mode, customPrompt, locale, context)
+  const { t } = useLocale()
+  onProgress?.(t('api.callingGenerate'))
 
   try {
     // 检查是否有图片输入（支持多图）
@@ -316,7 +335,7 @@ export async function generateScript(options: GenerateScriptOptions): Promise<Vi
       })
     }
 
-    onProgress?.('正在解析生成结果...')
+    onProgress?.(t('api.parsingResult'))
     return parseMarkdownTable(fullContent)
   } catch (error) {
     throw new Error(parseErrorMessage(error))

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Mail, Github } from 'lucide-vue-next'
+import { useLocale } from '@/composables/useLocale'
 
 defineProps<{
   open: boolean
@@ -23,6 +24,7 @@ const emit = defineEmits<{
 }>()
 
 const auth = useAuth()
+const { t } = useLocale()
 
 // 表单状态
 const email = ref('')
@@ -33,20 +35,20 @@ const error = ref('')
 const success = ref('')
 const activeTab = ref('login')
 
-// Supabase 错误信息中文翻译
+// Supabase 错误信息翻译（跟随界面语言）
 function translateError(errorMessage: string): string {
   const errorMap: Record<string, string> = {
-    'Invalid login credentials': '邮箱或密码错误',
-    'Email not confirmed': '邮箱未验证，请查收验证邮件',
-    'User already registered': '该邮箱已注册，请直接登录',
-    'Password should be at least 6 characters': '密码长度至少 6 位',
-    'Unable to validate email address': '邮箱格式不正确',
-    'Signups not allowed': '暂不允许注册',
-    'Email rate limit exceeded': '邮件发送过于频繁，请稍后再试',
-    'Invalid email': '邮箱格式不正确',
-    'User not found': '用户不存在',
-    'Invalid password': '密码错误',
-    'New password should be different from the old password': '新密码不能与旧密码相同',
+    'Invalid login credentials': t('auth.err.invalidCredentials'),
+    'Email not confirmed': t('auth.err.emailNotConfirmed'),
+    'User already registered': t('auth.err.alreadyRegistered'),
+    'Password should be at least 6 characters': t('auth.passwordMinLength'),
+    'Unable to validate email address': t('auth.err.invalidEmail'),
+    'Signups not allowed': t('auth.err.signupsNotAllowed'),
+    'Email rate limit exceeded': t('auth.err.rateLimit'),
+    'Invalid email': t('auth.err.invalidEmail'),
+    'User not found': t('auth.err.userNotFound'),
+    'Invalid password': t('auth.err.invalidPassword'),
+    'New password should be different from the old password': t('auth.err.samePassword'),
   }
 
   for (const [key, value] of Object.entries(errorMap)) {
@@ -70,7 +72,7 @@ function resetForm() {
 // 邮箱登录
 async function handleLogin() {
   if (!email.value || !password.value) {
-    error.value = '请填写邮箱和密码'
+    error.value = t('auth.fillEmailPassword')
     return
   }
 
@@ -82,7 +84,7 @@ async function handleLogin() {
     emit('update:open', false)
     resetForm()
   } catch (e) {
-    const msg = e instanceof Error ? e.message : '登录失败'
+    const msg = e instanceof Error ? e.message : t('auth.loginFail')
     error.value = translateError(msg)
   } finally {
     loading.value = false
@@ -92,17 +94,17 @@ async function handleLogin() {
 // 邮箱注册
 async function handleRegister() {
   if (!email.value || !password.value || !confirmPassword.value) {
-    error.value = '请填写所有字段'
+    error.value = t('auth.fillAllFields')
     return
   }
 
   if (password.value !== confirmPassword.value) {
-    error.value = '两次输入的密码不一致'
+    error.value = t('auth.passwordMismatch')
     return
   }
 
   if (password.value.length < 6) {
-    error.value = '密码长度至少 6 位'
+    error.value = t('auth.passwordMinLength')
     return
   }
 
@@ -113,21 +115,21 @@ async function handleRegister() {
     const result = await auth.signUp(email.value, password.value)
     // 如果注册成功且返回了 session（无需邮箱验证），直接登录
     if (result.session) {
-      success.value = '注册成功！'
+      success.value = t('auth.registerSuccess')
       setTimeout(() => {
         emit('update:open', false)
         resetForm()
       }, 1000)
     } else {
       // 需要邮箱验证
-      success.value = '注册成功！请查收验证邮件后登录'
+      success.value = t('auth.registerSuccessVerify')
       setTimeout(() => {
         resetForm()
         activeTab.value = 'login'
       }, 2000)
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : '注册失败'
+    const msg = e instanceof Error ? e.message : t('auth.registerFail')
     error.value = translateError(msg)
   } finally {
     loading.value = false
@@ -142,7 +144,7 @@ async function handleGitHubLogin() {
   try {
     await auth.signInWithGitHub()
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'GitHub 登录失败'
+    const msg = e instanceof Error ? e.message : t('auth.githubFail')
     error.value = translateError(msg)
     loading.value = false
   }
@@ -153,22 +155,22 @@ async function handleGitHubLogin() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>登录 / 注册</DialogTitle>
+        <DialogTitle>{{ t('auth.title') }}</DialogTitle>
         <DialogDescription>
-          登录以使用收藏功能
+          {{ t('auth.description') }}
         </DialogDescription>
       </DialogHeader>
 
       <Tabs v-model="activeTab" class="w-full">
         <TabsList class="grid w-full grid-cols-2">
-          <TabsTrigger value="login">登录</TabsTrigger>
-          <TabsTrigger value="register">注册</TabsTrigger>
+          <TabsTrigger value="login">{{ t('auth.loginTab') }}</TabsTrigger>
+          <TabsTrigger value="register">{{ t('auth.registerTab') }}</TabsTrigger>
         </TabsList>
 
         <!-- 登录表单 -->
         <TabsContent value="login" class="space-y-4">
           <div class="space-y-2">
-            <Label for="login-email">邮箱</Label>
+            <Label for="login-email">{{ t('auth.email') }}</Label>
             <Input
               id="login-email"
               v-model="email"
@@ -178,7 +180,7 @@ async function handleGitHubLogin() {
             />
           </div>
           <div class="space-y-2">
-            <Label for="login-password">密码</Label>
+            <Label for="login-password">{{ t('auth.password') }}</Label>
             <Input
               id="login-password"
               v-model="password"
@@ -195,14 +197,14 @@ async function handleGitHubLogin() {
           >
             <Loader2 v-if="loading" class="mr-2 h-4 w-4 animate-spin" />
             <Mail v-else class="mr-2 h-4 w-4" />
-            邮箱登录
+            {{ t('auth.emailLogin') }}
           </Button>
         </TabsContent>
 
         <!-- 注册表单 -->
         <TabsContent value="register" class="space-y-4">
           <div class="space-y-2">
-            <Label for="register-email">邮箱</Label>
+            <Label for="register-email">{{ t('auth.email') }}</Label>
             <Input
               id="register-email"
               v-model="email"
@@ -211,21 +213,21 @@ async function handleGitHubLogin() {
             />
           </div>
           <div class="space-y-2">
-            <Label for="register-password">密码</Label>
+            <Label for="register-password">{{ t('auth.password') }}</Label>
             <Input
               id="register-password"
               v-model="password"
               type="password"
-              placeholder="至少 6 位"
+              :placeholder="t('auth.passwordMinLengthPlaceholder')"
             />
           </div>
           <div class="space-y-2">
-            <Label for="register-confirm">确认密码</Label>
+            <Label for="register-confirm">{{ t('auth.confirmPassword') }}</Label>
             <Input
               id="register-confirm"
               v-model="confirmPassword"
               type="password"
-              placeholder="再次输入密码"
+              :placeholder="t('auth.confirmPasswordPlaceholder')"
               @keyup.enter="handleRegister"
             />
           </div>
@@ -237,7 +239,7 @@ async function handleGitHubLogin() {
           >
             <Loader2 v-if="loading" class="mr-2 h-4 w-4 animate-spin" />
             <Mail v-else class="mr-2 h-4 w-4" />
-            邮箱注册
+            {{ t('auth.emailRegister') }}
           </Button>
         </TabsContent>
       </Tabs>
@@ -248,7 +250,7 @@ async function handleGitHubLogin() {
           <span class="w-full border-t" />
         </div>
         <div class="relative flex justify-center text-xs uppercase">
-          <span class="bg-background px-2 text-muted-foreground">或</span>
+          <span class="bg-background px-2 text-muted-foreground">{{ t('auth.or') }}</span>
         </div>
       </div>
 
@@ -260,7 +262,7 @@ async function handleGitHubLogin() {
         :disabled="loading"
       >
         <Github class="mr-2 h-4 w-4" />
-        GitHub 登录
+        {{ t('auth.githubLogin') }}
       </Button>
 
       <!-- 错误提示 -->

@@ -1,0 +1,7 @@
+# 正式域名：www.youmedhub.com
+User-agent: *
+Allow: /
+Disallow: /profile
+Disallow: /favorites
+
+Sitemap: https://www.youmedhub.com/sitemap.xml

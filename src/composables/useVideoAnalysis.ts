@@ -9,6 +9,7 @@ import type {
 import { AVAILABLE_MODELS, DEFAULT_MODEL_ID, type ModelConfig } from '@/config/models'
 import type { AnalysisMode } from '@/prompts/videoAnalysis'
 import { uploadToTemporaryFile, type UploadProgressCallback } from '@/api/temporaryFile'
+import { useLocale } from '@/composables/useLocale'
 
 const videoFile = ref<File | null>(null)
 const videoUrl = ref('') // OSS URL（提交后上传获取）
@@ -302,12 +303,13 @@ export function useVideoAnalysis() {
 
   // 上传视频文件（提交时调用）
   async function uploadVideo(onProgress?: UploadProgressCallback): Promise<string> {
+    const { t } = useLocale()
     if (!videoFile.value) {
-      throw new Error('未选择视频文件')
+      throw new Error(t('analyze.selectVideoFirst'))
     }
 
     if (!dashscopeApiKey.value) {
-      throw new Error('请先配置阿里百炼 API Key')
+      throw new Error(t('analyze.apiKeyRequired'))
     }
 
     // 如果已经上传过，直接返回已有的 OSS URL
@@ -344,8 +346,9 @@ export function useVideoAnalysis() {
       return []
     }
 
+    const { t } = useLocale()
     if (!dashscopeApiKey.value) {
-      throw new Error('请先配置阿里百炼 API Key')
+      throw new Error(t('analyze.apiKeyRequired'))
     }
 
     const uploadedUrls: string[] = []

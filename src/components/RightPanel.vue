@@ -6,21 +6,25 @@ import ResultToolbar from '@/components/ResultToolbar.vue'
 import MarkdownView from '@/components/MarkdownView.vue'
 import ScriptTable from '@/components/ScriptTable.vue'
 import ThinkingPanel from '@/components/ThinkingPanel.vue'
+import AdSlot from '@/components/AdSlot.vue'
+import { ADSENSE_SLOT_RESULT } from '@/lib/adsense'
+import { useLocale } from '@/composables/useLocale'
 
 const route = useRoute()
 const va = useVideoAnalysis()
+const { t } = useLocale()
 
 const emptyState = computed(() => {
   if (route.name === 'create') {
     return {
-      title: '请先填写创作需求',
-      description: '支持文字描述，并可补充参考图片或参考脚本',
+      title: t('result.emptyCreateTitle'),
+      description: t('result.emptyCreateDesc'),
     }
   }
 
   return {
-    title: '请先上传视频文件',
-    description: '支持 mp4、mov 格式，大小 ≤100MB / 时长 ≤10 分钟',
+    title: t('result.emptyAnalyzeTitle'),
+    description: t('result.emptyAnalyzeDesc'),
   }
 })
 </script>
@@ -45,6 +49,9 @@ const emptyState = computed(() => {
           <p class="mt-1 text-sm">{{ emptyState.description }}</p>
         </div>
       </div>
+
+      <!-- 广告位（结果区底部） -->
+      <AdSlot :ad-slot="ADSENSE_SLOT_RESULT" />
     </div>
   </div>
 </template>

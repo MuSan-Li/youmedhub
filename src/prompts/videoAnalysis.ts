@@ -6,6 +6,9 @@
 // 分析模式类型
 export type AnalysisMode = 'analyze' | 'create' | 'reference'
 
+// 输出语言类型
+export type OutputLocale = 'zh' | 'en'
+
 export interface CreatePromptContext {
   topic: string
   style?: string
@@ -164,18 +167,36 @@ ${TABLE_EXAMPLE}
 7. **输出表格**：仅输出 Markdown 表格，不添加任何额外说明。`
 
 /**
+ * 英文输出指令段（追加在任意模式提示词末尾）
+ * 表头固定为英文，供 parseMarkdownTable 稳定定位
+ */
+const ENGLISH_OUTPUT_DIRECTIVE = `
+
+# Output Language Requirement (MUST follow)
+
+- Write ALL output in English: column headers, every cell value, and any explanations inside cells.
+- Use EXACTLY these column headers, in this exact order:
+  | No. | Shot | Camera | Visual Content | Shooting Guide | On-screen Text | Voiceover | Audio | Start | End | Duration |
+- Keep all time values in MM:SS format (e.g. 00:03).
+- If the video or user input contains Chinese speech / on-screen text, translate or summarize it into English in the corresponding cells.
+- All other formatting constraints above (empty value as "-", time continuity, markdown table only) still apply.`
+
+/**
  * 根据模式获取对应的提示词
  */
-export function getPromptByMode(mode: AnalysisMode): string {
-  switch (mode) {
-    case 'create':
-      return VIDEO_CREATE_PROMPT
-    case 'reference':
-      return VIDEO_REFERENCE_PROMPT
-    case 'analyze':
-    default:
-      return VIDEO_ANALYSIS_PROMPT
-  }
+export function getPromptByMode(mode: AnalysisMode, locale: OutputLocale = 'zh'): string {
+  const base = (() => {
+    switch (mode) {
+      case 'create':
+        return VIDEO_CREATE_PROMPT
+      case 'reference':
+        return VIDEO_REFERENCE_PROMPT
+      case 'analyze':
+      default:
+        return VIDEO_ANALYSIS_PROMPT
+    }
+  })()
+  return locale === 'en' ? `${base}${ENGLISH_OUTPUT_DIRECTIVE}` : base
 }
 
 function formatOptionalField(value?: string): string {
@@ -237,14 +258,18 @@ ${referenceScript}
 请严格参考以上脚本的风格并完成新的原创脚本。`
 }
 
-export function buildPromptByMode(mode: 'analyze'): string
-export function buildPromptByMode(mode: 'create', context: CreatePromptContext): string
-export function buildPromptByMode(mode: 'reference', context: ReferencePromptContext): string
+export function buildPromptByMode(mode: 'analyze', locale?: OutputLocale): string
+export function buildPromptByMode(mode: 'create', context: CreatePromptContext, locale?: OutputLocale): string
+export function buildPromptByMode(mode: 'reference', context: ReferencePromptContext, locale?: OutputLocale): string
 export function buildPromptByMode(
   mode: AnalysisMode,
-  context?: CreatePromptContext | ReferencePromptContext
+  contextOrLocale?: CreatePromptContext | ReferencePromptContext | OutputLocale,
+  locale?: OutputLocale
 ): string {
-  const basePrompt = getPromptByMode(mode)
+  // 第二参数既可能是上下文（create/reference）也可能是 locale（analyze）
+  const actualLocale: OutputLocale = typeof contextOrLocale === 'string' ? contextOrLocale : (locale ?? 'zh')
+  const context = typeof contextOrLocale === 'string' ? undefined : contextOrLocale
+  const basePrompt = getPromptByMode(mode, actualLocale)
 
   switch (mode) {
     case 'create':

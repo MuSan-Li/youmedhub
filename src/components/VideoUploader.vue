@@ -6,8 +6,10 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Upload, Link } from 'lucide-vue-next'
+import { useLocale } from '@/composables/useLocale'
 
 const va = useVideoAnalysis()
+const { t } = useLocale()
 
 const dragOver = ref(false)
 const errorMsg = ref('')
@@ -21,7 +23,7 @@ function checkDuration(file: File): Promise<boolean> {
     video.onloadedmetadata = () => {
       URL.revokeObjectURL(video.src)
       if (video.duration > 600) {
-        errorMsg.value = '视频时长不能超过 10 分钟'
+        errorMsg.value = t('upload.durationLimit')
         resolve(false)
       } else {
         resolve(true)
@@ -29,7 +31,7 @@ function checkDuration(file: File): Promise<boolean> {
     }
     video.onerror = () => {
       URL.revokeObjectURL(video.src)
-      errorMsg.value = '无法读取视频信息'
+      errorMsg.value = t('upload.readFail')
       resolve(false)
     }
     video.src = URL.createObjectURL(file)
@@ -41,7 +43,7 @@ async function handleFile(file: File) {
 
   const validation = validateVideoFile(file)
   if (!validation.isValid) {
-    errorMsg.value = validation.error || '文件校验失败'
+    errorMsg.value = validation.error || t('upload.validateFail')
     return
   }
 
@@ -75,11 +77,11 @@ function onFileInput(e: Event) {
 
 function handleUrlInput() {
   if (!urlInput.value.trim()) {
-    errorMsg.value = '请输入视频 URL'
+    errorMsg.value = t('upload.urlRequired')
     return
   }
   if (!urlInput.value.startsWith('http')) {
-    errorMsg.value = '请输入有效的 HTTP URL'
+    errorMsg.value = t('upload.urlInvalid')
     return
   }
   errorMsg.value = ''
@@ -108,7 +110,7 @@ function handleClearVideo() {
     <div v-if="va.videoFile.value" class="text-center">
       <p class="text-sm font-medium text-foreground">{{ va.videoFile.value.name }}</p>
       <p class="mt-1 text-xs text-muted-foreground">
-        已选择，点击「开始分析」上传
+        {{ t('upload.selected') }}
       </p>
       <Button
         variant="ghost"
@@ -116,7 +118,7 @@ function handleClearVideo() {
         class="mt-2 text-xs"
         @click="handleClearVideo"
       >
-        重新选择
+        {{ t('upload.reselect') }}
       </Button>
     </div>
 
@@ -124,8 +126,8 @@ function handleClearVideo() {
     <template v-else>
       <label class="flex cursor-pointer flex-col items-center gap-2">
         <Upload class="h-10 w-10 text-muted-foreground" />
-        <span class="text-sm font-medium">拖拽视频到此处或点击上传</span>
-        <span class="text-xs text-muted-foreground">mp4, mov · ≤100MB · ≤10 分钟</span>
+        <span class="text-sm font-medium">{{ t('upload.dropzone') }}</span>
+        <span class="text-xs text-muted-foreground">{{ t('upload.formatHint') }}</span>
         <input
           type="file"
           accept="video/mp4,video/quicktime,.mp4,.mov"
@@ -143,16 +145,16 @@ function handleClearVideo() {
           @click="showUrlInput = !showUrlInput"
         >
           <Link class="mr-1 h-3 w-3" />
-          {{ showUrlInput ? '隐藏 URL 输入' : '或输入视频 URL' }}
+          {{ showUrlInput ? t('upload.hideUrl') : t('upload.showUrl') }}
         </Button>
         <div v-if="showUrlInput" class="flex gap-2">
           <Input
             v-model="urlInput"
-            placeholder="输入视频 URL"
+            :placeholder="t('upload.urlPlaceholder')"
             class="text-xs"
             @keyup.enter="handleUrlInput"
           />
-          <Button size="sm" @click="handleUrlInput">确定</Button>
+          <Button size="sm" @click="handleUrlInput">{{ t('upload.confirm') }}</Button>
         </div>
       </div>
     </template>

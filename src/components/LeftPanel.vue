@@ -9,6 +9,7 @@ import AnalysisControl from '@/components/AnalysisControl.vue'
 import CreateModePanel from '@/components/CreateModePanel.vue'
 import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
 import { useAuth } from '@/composables/useAuth'
+import { useLocale } from '@/composables/useLocale'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Loader2, Play, Scissors } from 'lucide-vue-next'
@@ -27,6 +28,7 @@ interface GenerateParams {
 const route = useRoute()
 const va = useVideoAnalysis()
 const auth = useAuth()
+const { locale, t } = useLocale()
 
 const showAuthDialog = ref(false)
 const generateErrorMessage = ref('')
@@ -64,8 +66,8 @@ function handleStartAnalysis() {
 
 function buildGenerateTopic(params: GenerateParams): string {
   return [
-    `视频类型：${params.videoTypeLabel || params.videoType}`,
-    `视频要求：`,
+    `${t('create.topicType')}：${params.videoTypeLabel || params.videoType}`,
+    `${t('create.topicRequirement')}：`,
     params.requirementText,
   ].filter(Boolean).join('\n')
 }
@@ -77,13 +79,13 @@ async function handleStartGenerate() {
   }
 
   if (!va.currentApiKey.value) {
-    generateErrorMessage.value = '请先配置阿里百炼 API Key'
+    generateErrorMessage.value = t('analyze.apiKeyRequired')
     return
   }
 
   const params = createModePanelRef.value?.getParams() as GenerateParams | undefined
   if (!params || !params.videoType) {
-    generateErrorMessage.value = '请先完善视频要求'
+    generateErrorMessage.value = t('create.completeParams')
     return
   }
 
@@ -100,10 +102,10 @@ async function handleStartGenerate() {
   try {
     // 上传多张图片（使用百炼临时存储，与模型绑定）
     const uploadedImageUrls: string[] = []
-    const model = va.selectedModel.value?.id || 'qwen3.5-flash'
+    const model = va.selectedModel.value?.id || 'qwen3.8-flash'
     const apiKey = va.currentApiKey.value
     if (!apiKey) {
-      throw new Error('请先配置阿里百炼 API Key')
+      throw new Error(t('analyze.apiKeyRequired'))
     }
     for (let i = 0; i < va.imageFiles.value.length; i++) {
       const file = va.imageFiles.value[i]
@@ -133,7 +135,8 @@ async function handleStartGenerate() {
 
     const commonOptions = {
       apiKey: va.currentApiKey.value,
-      model: (va.selectedModel.value?.id || 'qwen3.5-flash') as AIModel,
+      model: (va.selectedModel.value?.id || 'qwen3.8-flash') as AIModel,
+      locale: locale.value,
       params: {
         enableThinking: va.enableThinking.value,
       },
@@ -147,7 +150,9 @@ async function handleStartGenerate() {
     const generateTasks = Array.from({ length: params.scriptCount }, (_, i) => {
       let candidateMarkdown = ''
       let candidateTokenUsage: TokenUsage | null = null
-      const variantHint = `\n\n# 候选方案要求\n当前为第 ${i + 1} 套候选脚本，请在叙事角度、镜头节奏或文案表达上与其他方案明显区分。`
+      const variantHint = locale.value === 'en'
+        ? `\n\n# Candidate Variant Requirement\nThis is candidate script #${i + 1}. Differentiate it clearly from other candidates in narrative angle, shot pacing, or copywriting style.`
+        : `\n\n# 候选方案要求\n当前为第 ${i + 1} 套候选脚本，请在叙事角度、镜头节奏或文案表达上与其他方案明显区分。`
 
       return {
         index: i,
@@ -162,7 +167,7 @@ async function handleStartGenerate() {
             customPrompt: buildPromptByMode('reference', {
               topic,
               referenceScript: params.referenceScript || '',
-            }) + variantHint,
+            }, locale.value) + variantHint,
             onStream: (chunk: string) => {
               // 收到正式内容时，思考已完成
               va.isThinking.value = false
@@ -190,7 +195,7 @@ async function handleStartGenerate() {
               topic,
               duration: params.duration,
               imageUrls: uploadedImageUrls,
-            }) + variantHint,
+            }, locale.value) + variantHint,
             onStream: (chunk: string) => {
               // 收到正式内容时，思考已完成
               va.isThinking.value = false
@@ -226,7 +231,7 @@ async function handleStartGenerate() {
       if (result.status === 'fulfilled') {
         const candidate: ScriptCandidate = {
           id: `candidate_${Date.now()}_${i + 1}`,
-          title: `方案 ${i + 1}`,
+          title: t('create.candidate', { n: i + 1 }),
           markdown,
           scriptData: result.value.rep,
           tokenUsage,
@@ -234,8 +239,8 @@ async function handleStartGenerate() {
         va.appendScriptCandidate(candidate)
         successCount += 1
       } else {
-        const message = result.reason instanceof Error ? result.reason.message : '生成失败'
-        errorMessages.push(`方案 ${i + 1}：${message}`)
+        const message = result.reason instanceof Error ? result.reason.message : t('create.fail')
+        errorMessages.push(`${t('create.candidate', { n: i + 1 })}：${message}`)
       }
     })
 
@@ -243,18 +248,18 @@ async function handleStartGenerate() {
     va.isThinking.value = false
 
     if (successCount === 0) {
-      throw new Error(errorMessages[0] || '生成失败，请重试')
+      throw new Error(errorMessages[0] || t('create.failRetry'))
     }
 
     va.analysisStatus.value = 'success'
     va.viewMode.value = 'table'
     va.collapseConfigPanel() // 生成成功后收起配置栏
     if (errorMessages.length > 0) {
-      generateErrorMessage.value = `部分方案生成失败：${errorMessages.join('；')}`
+      generateErrorMessage.value = t('create.partialFail', { errors: errorMessages.join('；') })
     }
   } catch (e) {
-    generateErrorMessage.value = e instanceof Error ? e.message : '生成失败，请重试'
-    console.error('生成失败:', e)
+    generateErrorMessage.value = e instanceof Error ? e.message : t('create.failRetry')
+    console.error('[handleStartGenerate] failed:', e)
     va.analysisStatus.value = 'error'
     va.isThinking.value = false
   }
@@ -274,13 +279,13 @@ const canGenerateProxy = computed(() => createModePanelRef.value?.canGenerate ??
       <div class="flex-1 overflow-y-auto p-4">
         <div class="space-y-4">
           <div class="space-y-2">
-            <Label class="text-xs font-normal text-muted-foreground">上传视频</Label>
+            <Label class="text-xs font-normal text-muted-foreground">{{ t('analyze.uploadLabel') }}</Label>
             <VideoPreview v-if="va.hasVideo.value" />
             <VideoUploader v-else />
           </div>
 
           <div class="space-y-2">
-            <Label class="text-xs font-normal text-muted-foreground">模型选择</Label>
+            <Label class="text-xs font-normal text-muted-foreground">{{ t('analyze.modelLabel') }}</Label>
             <AnalysisControl ref="analysisControlRef" />
           </div>
         </div>
@@ -294,9 +299,9 @@ const canGenerateProxy = computed(() => createModePanelRef.value?.canGenerate ??
         >
           <Loader2 v-if="isProcessingProxy" class="mr-2 h-4 w-4 animate-spin" />
           <Scissors v-else class="mr-2 h-4 w-4" />
-          <template v-if="isUploadingProxy">上传中...</template>
-          <template v-else-if="isAnalyzingProxy">分析中...</template>
-          <template v-else>开始分析</template>
+          <template v-if="isUploadingProxy">{{ t('analyze.uploading') }}</template>
+          <template v-else-if="isAnalyzingProxy">{{ t('analyze.analyzing') }}</template>
+          <template v-else>{{ t('analyze.start') }}</template>
         </Button>
       </div>
     </template>
@@ -314,8 +319,8 @@ const canGenerateProxy = computed(() => createModePanelRef.value?.canGenerate ??
         >
           <Loader2 v-if="isProcessingProxy" class="mr-2 h-4 w-4 animate-spin" />
           <Play v-else class="mr-2 h-4 w-4" />
-          <template v-if="isProcessingProxy">生成中...</template>
-          <template v-else>开始生成</template>
+          <template v-if="isProcessingProxy">{{ t('create.generating') }}</template>
+          <template v-else>{{ t('create.start') }}</template>
         </Button>
         <p v-if="generateErrorMessage" class="mt-2 text-xs text-destructive">
           {{ generateErrorMessage }}
@@ -325,7 +330,7 @@ const canGenerateProxy = computed(() => createModePanelRef.value?.canGenerate ??
 
     <template v-else>
       <div class="flex flex-1 items-center justify-center">
-        <p class="text-sm text-muted-foreground">请选择功能</p>
+        <p class="text-sm text-muted-foreground">{{ t('layout.selectFeature') }}</p>
       </div>
     </template>
 

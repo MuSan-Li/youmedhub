@@ -10,10 +10,12 @@ import { useToast } from '@/components/ui/toast'
 import { FileSpreadsheet, FileText, Table2, Heart } from 'lucide-vue-next'
 import AuthDialog from '@/components/AuthDialog.vue'
 import FavoriteDialog from '@/components/FavoriteDialog.vue'
+import { useLocale } from '@/composables/useLocale'
 
 const va = useVideoAnalysis()
 const auth = useAuth()
 const { toast } = useToast()
+const { t } = useLocale()
 
 const showAuthDialog = ref(false)
 const showFavoriteDialog = ref(false)
@@ -46,15 +48,15 @@ function handleFavoriteClick() {
 // 收藏成功
 function handleFavoriteSaved() {
   toast({
-    title: '保存成功',
-    description: '脚本已添加到收藏',
+    title: t('result.saveSuccessTitle'),
+    description: t('result.saveSuccessDesc'),
   })
 }
 </script>
 
 <template>
   <div class="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-    <span class="text-sm font-medium text-muted-foreground">分析结果</span>
+    <span class="text-sm font-medium text-muted-foreground">{{ t('result.title') }}</span>
 
     <Separator orientation="vertical" class="mx-1 h-5" />
 
@@ -66,7 +68,7 @@ function handleFavoriteSaved() {
         @click="va.viewMode.value = 'markdown'"
       >
         <FileText class="mr-1.5 h-4 w-4" />
-        原始内容
+        {{ t('result.rawContent') }}
       </Button>
       <Button
         variant="ghost"
@@ -75,7 +77,7 @@ function handleFavoriteSaved() {
         @click="va.viewMode.value = 'table'"
       >
         <Table2 class="mr-1.5 h-4 w-4" />
-        分镜表格
+        {{ t('result.table') }}
       </Button>
     </div>
 
@@ -83,10 +85,10 @@ function handleFavoriteSaved() {
 
     <div v-if="va.tokenUsage.value" class="flex items-center gap-2">
       <Badge variant="secondary" class="text-xs">
-        输入 {{ va.tokenUsage.value.prompt_tokens.toLocaleString() }}
+        {{ t('result.inputTokens') }} {{ va.tokenUsage.value.prompt_tokens.toLocaleString() }}
       </Badge>
       <Badge variant="secondary" class="text-xs">
-        输出 {{ va.tokenUsage.value.completion_tokens.toLocaleString() }}
+        {{ t('result.outputTokens') }} {{ va.tokenUsage.value.completion_tokens.toLocaleString() }}
       </Badge>
     </div>
 
@@ -98,7 +100,7 @@ function handleFavoriteSaved() {
       @click="handleFavoriteClick"
     >
       <Heart class="mr-1.5 h-4 w-4" />
-      收藏
+      {{ t('result.favorite') }}
     </Button>
 
     <Button
@@ -108,7 +110,7 @@ function handleFavoriteSaved() {
       @click="exportToExcel(va.scriptItems.value)"
     >
       <FileSpreadsheet class="mr-1.5 h-4 w-4" />
-      导出 Excel
+      {{ t('result.exportExcel') }}
     </Button>
 
     <!-- 登录弹窗 -->

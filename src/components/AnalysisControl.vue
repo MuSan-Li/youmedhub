@@ -5,6 +5,7 @@ import { useAuth } from '@/composables/useAuth'
 import { analyzeVideo, type AIModel } from '@/api/videoAnalysis'
 import { uploadToTemporaryFile } from '@/api/temporaryFile'
 import { AVAILABLE_MODELS } from '@/config/models'
+import { useLocale } from '@/composables/useLocale'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,6 +21,7 @@ import AuthDialog from '@/components/AuthDialog.vue'
 // 获取全局状态
 const va = useVideoAnalysis()
 const auth = useAuth()
+const { locale, t } = useLocale()
 
 // 登录弹窗
 const showAuthDialog = ref(false)
@@ -33,7 +35,7 @@ const modelChangeMessage = ref('')
 
 // 模型选择
 const selectedModelId = computed({
-  get: () => va.selectedModel.value?.id || 'qwen3.5-flash',
+  get: () => va.selectedModel.value?.id || 'qwen3.8-flash',
   set: (val: string) => {
     const oldModelId = va.selectedModel.value?.id
     const model = AVAILABLE_MODELS.find(m => m.id === val)
@@ -41,7 +43,7 @@ const selectedModelId = computed({
       va.setSelectedModel(model)
       // 如果模型变化且有已上传的文件，显示提示
       if (oldModelId && oldModelId !== val && (va.videoUrl.value || va.imageUrls.value.length > 0)) {
-        modelChangeMessage.value = '已切换模型，文件与模型绑定，提交时将重新上传'
+        modelChangeMessage.value = t('analyze.modelChanged')
         // 3秒后自动清除提示
         setTimeout(() => {
           modelChangeMessage.value = ''
@@ -69,11 +71,11 @@ const errorMessage = ref('')
 // 上传视频
 async function uploadVideo(): Promise<string> {
   if (!va.videoFile.value) {
-    throw new Error('请先选择视频')
+    throw new Error(t('analyze.selectVideoFirst'))
   }
 
   if (!va.currentApiKey.value) {
-    throw new Error('请先配置阿里百炼 API Key')
+    throw new Error(t('analyze.apiKeyRequired'))
   }
 
   isUploading.value = true
@@ -83,7 +85,7 @@ async function uploadVideo(): Promise<string> {
   try {
     const result = await uploadToTemporaryFile(
       va.videoFile.value,
-      va.selectedModel.value?.id || 'qwen3.5-flash',
+      va.selectedModel.value?.id || 'qwen3.8-flash',
       va.currentApiKey.value,
       (loaded, total) => {
         uploadProgress.value = total > 0 ? Math.round((loaded / total) * 100) : 0
@@ -95,7 +97,7 @@ async function uploadVideo(): Promise<string> {
     return result.downloadLink
   } catch (e) {
     va.uploadStatus.value = 'error'
-    throw new Error(e instanceof Error ? e.message : '上传失败')
+    throw new Error(e instanceof Error ? e.message : t('analyze.uploadFail'))
   } finally {
     isUploading.value = false
   }
@@ -109,7 +111,7 @@ async function startAnalysis() {
   }
 
   if (!va.currentApiKey.value) {
-    errorMessage.value = '请先配置阿里百炼 API Key'
+    errorMessage.value = t('analyze.apiKeyRequired')
     return
   }
 
@@ -138,8 +140,9 @@ async function startAnalysis() {
     const result = await analyzeVideo({
       source: videoUrl,
       apiKey: va.currentApiKey.value,
-      model: (va.selectedModel.value?.id || 'qwen3.5-flash') as AIModel,
+      model: (va.selectedModel.value?.id || 'qwen3.8-flash') as AIModel,
       mode: 'analyze',
+      locale: locale.value,
       onStream: (chunk) => {
         va.markdownContent.value += chunk
       },
@@ -159,8 +162,8 @@ async function startAnalysis() {
     va.isThinking.value = false
     va.viewMode.value = 'table'
   } catch (e) {
-    errorMessage.value = e instanceof Error ? e.message : '操作失败，请重试'
-    console.error('操作失败:', e)
+    errorMessage.value = e instanceof Error ? e.message : t('analyze.operationFail')
+    console.error('[startAnalysis] failed:', e)
     va.analysisStatus.value = 'error'
     va.isThinking.value = false
   }
@@ -180,7 +183,7 @@ defineExpose({
       <!-- 模型选择 -->
       <Select v-model="selectedModelId" :disabled="isProcessing" class="flex-1">
         <SelectTrigger class="h-8 w-full">
-          <SelectValue placeholder="选择模型" />
+          <SelectValue :placeholder="t('analyze.selectModel')" />
         </SelectTrigger>
         <SelectContent class="max-w-[50vw]">
           <SelectItem
@@ -203,18 +206,18 @@ defineExpose({
         @click="enableThinking = !enableThinking"
       >
         <Brain class="h-4 w-4 text-purple-500" />
-        <span class="text-purple-700">思考</span>
+        <span class="text-purple-700">{{ t('analyze.thinking') }}</span>
       </Button>
     </div>
 
     <!-- 登录提示 -->
     <div v-if="!auth.isAuthenticated.value" class="rounded-md bg-amber-500/10 p-3 text-xs text-amber-600">
-      请先登录后再进行分析
+      {{ t('analyze.loginRequired') }}
     </div>
 
     <!-- API Key 状态提示 -->
     <div v-if="!hasApiKey" class="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-      请先配置阿里百炼 API Key
+      {{ t('analyze.apiKeyRequired') }}
     </div>
 
     <!-- 模型切换提示 -->
@@ -226,7 +229,7 @@ defineExpose({
     <div v-if="isUploading" class="space-y-2">
       <div class="flex items-center gap-2 text-sm">
         <Upload class="h-4 w-4 text-muted-foreground" />
-        <span>正在上传视频...</span>
+        <span>{{ t('analyze.uploadingVideo') }}</span>
       </div>
       <Progress :model-value="uploadProgress" class="w-full" />
       <p class="text-xs text-muted-foreground text-center">{{ uploadProgress }}%</p>

@@ -3,8 +3,10 @@ import { ref } from 'vue'
 import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
 import { Button } from '@/components/ui/button'
 import { ImagePlus, X } from 'lucide-vue-next'
+import { useLocale } from '@/composables/useLocale'
 
 const va = useVideoAnalysis()
+const { t } = useLocale()
 
 const isDragging = ref(false)
 
@@ -70,12 +72,12 @@ function removeImage(index: number) {
       >
         <img
           :src="url"
-          :alt="`图 ${index + 1}`"
+          :alt="t('panel.imageRefTag', { n: index + 1 })"
           class="w-full h-full rounded-lg border object-cover"
         />
         <!-- 图片标签 -->
         <div class="absolute bottom-1 left-1 px-1.5 py-0.5 bg-black/60 rounded text-[10px] text-white">
-          图 {{ index + 1 }}
+          {{ t('panel.imageRefTag', { n: index + 1 }) }}
         </div>
         <!-- 删除按钮 -->
         <Button

@@ -2,10 +2,13 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppMenu from './AppMenu.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
+import { useLocale } from '@/composables/useLocale'
 
 const route = useRoute()
 const va = useVideoAnalysis()
+const { t } = useLocale()
 const isMenuCollapsed = ref(false)
 
 // 只有拆解脚本和脚本生成页需要左二栏
@@ -16,10 +19,10 @@ const showConfigPanel = computed(() => {
 // 根据路由显示对应的功能名称
 const panelTitle = computed(() => {
   const titles: Record<string, string> = {
-    analyze: '拆解脚本',
-    create: '脚本生成',
+    analyze: t('layout.analyze'),
+    create: t('layout.create'),
   }
-  return titles[route.name as string] || '配置'
+  return titles[route.name as string] || t('layout.config')
 })
 
 // 配置栏宽度：创建页面在生成前展开，生成后收起
@@ -55,7 +58,7 @@ const configPanelWidth = computed(() => {
         <!-- 配置区内容 -->
         <div class="flex-1 overflow-y-auto">
           <slot name="config">
-            <div class="p-4 text-center text-sm text-muted-foreground">请选择功能</div>
+            <div class="p-4 text-center text-sm text-muted-foreground">{{ t('layout.selectFeature') }}</div>
           </slot>
         </div>
       </div>
@@ -63,11 +66,15 @@ const configPanelWidth = computed(() => {
 
     <!-- 右侧：内容区 -->
     <main class="flex flex-1 flex-col overflow-hidden">
+      <!-- 内容区顶部工具栏：右侧语言切换 -->
+      <div class="flex h-10 shrink-0 items-center justify-end border-b bg-card px-3">
+        <LanguageSwitcher />
+      </div>
       <!-- 内容区主体 -->
       <div class="flex-1 overflow-y-auto">
         <slot name="content">
           <div class="flex h-full items-center justify-center text-muted-foreground">
-            选择左侧菜单开始
+            {{ t('layout.selectFromMenu') }}
           </div>
         </slot>
       </div>

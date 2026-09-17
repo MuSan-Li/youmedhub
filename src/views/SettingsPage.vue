@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
+import { useLocale } from '@/composables/useLocale'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 const { dashscopeApiKey, setDashscopeApiKey } = useVideoAnalysis()
+const { t } = useLocale()
 
 const dashscopeInput = ref(dashscopeApiKey.value)
 const saved = ref(false)
@@ -20,22 +22,22 @@ function handleSave() {
 
 <template>
   <div class="mx-auto max-w-md">
-    <h1 class="text-2xl font-semibold">设置</h1>
+    <h1 class="text-2xl font-semibold">{{ t('settings.title') }}</h1>
     <p class="mt-2 text-muted-foreground">
-      配置 API Key，Key 仅保存在浏览器本地
+      {{ t('settings.description') }}
     </p>
 
     <div class="mt-8 space-y-6">
       <!-- 阿里百炼 API Key -->
       <div class="space-y-2">
-        <label class="text-sm font-medium">阿里百炼 API Key</label>
+        <label class="text-sm font-medium">{{ t('apiKey.label') }}</label>
         <Input
           v-model="dashscopeInput"
           type="password"
           placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
         />
         <p class="text-xs text-muted-foreground">
-          获取地址：
+          {{ t('settings.getKeyAt') }}
           <a
             href="https://dashscope.console.aliyun.com/apiKey"
             target="_blank"
@@ -48,7 +50,7 @@ function handleSave() {
 
       <!-- 保存按钮 -->
       <Button class="w-full" @click="handleSave">
-        {{ saved ? '已保存' : '保存设置' }}
+        {{ saved ? t('settings.saved') : t('settings.saveSettings') }}
       </Button>
     </div>
   </div>

@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Home, Sparkles, FileText, Heart, Settings, LogIn, LogOut, User } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
+import { useLocale } from '@/composables/useLocale'
 import { useToast } from '@/components/ui/toast'
 import AuthDialog from '@/components/AuthDialog.vue'
 import {
@@ -26,19 +27,20 @@ const auth = useAuth()
 const { toast } = useToast()
 
 const showAuthDialog = ref(false)
+const { t } = useLocale()
 
 // 主菜单
-const mainMenuItems = [
-  { name: 'home', label: '首页', icon: Home, path: '/' },
-  { name: 'analyze', label: '拆解脚本', icon: Sparkles, path: '/analyze' },
-  { name: 'create', label: '脚本生成', icon: FileText, path: '/create' },
-]
+const mainMenuItems = computed(() => [
+  { name: 'home', label: t('menu.home'), icon: Home, path: '/' },
+  { name: 'analyze', label: t('menu.analyze'), icon: Sparkles, path: '/analyze' },
+  { name: 'create', label: t('menu.create'), icon: FileText, path: '/create' },
+])
 
 // 底部菜单
-const bottomMenuItems = [
-  { name: 'favorites', label: '我的收藏', icon: Heart, path: '/favorites' },
-  { name: 'settings', label: '设置', icon: Settings, path: '/settings' },
-]
+const bottomMenuItems = computed(() => [
+  { name: 'favorites', label: t('menu.favorites'), icon: Heart, path: '/favorites' },
+  { name: 'settings', label: t('menu.settings'), icon: Settings, path: '/settings' },
+])
 
 const activeMenu = computed(() => route.name as string)
 
@@ -58,13 +60,13 @@ async function handleLogout() {
   try {
     await auth.signOut()
     toast({
-      title: '已退出登录',
+      title: t('menu.logoutSuccess'),
     })
     router.push('/')
   } catch (e) {
     toast({
-      title: '退出失败',
-      description: e instanceof Error ? e.message : '未知错误',
+      title: t('menu.logoutFailed'),
+      description: e instanceof Error ? e.message : t('common.unknownError'),
       variant: 'destructive',
     })
   }
@@ -132,7 +134,7 @@ function getInitials(name: string): string {
           @click="handleLoginClick"
         >
           <LogIn class="h-5 w-5 shrink-0" />
-          <span v-if="!collapsed" class="truncate">登录</span>
+          <span v-if="!collapsed" class="truncate">{{ t('menu.login') }}</span>
         </button>
 
         <!-- 已登录：显示用户下拉菜单 -->
@@ -160,12 +162,12 @@ function getInitials(name: string): string {
             <DropdownMenuSeparator />
             <DropdownMenuItem @click="navigate('/profile')">
               <User class="mr-2 h-4 w-4" />
-              个人中心
+              {{ t('menu.profile') }}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem @click="handleLogout" class="text-destructive">
               <LogOut class="mr-2 h-4 w-4" />
-              退出登录
+              {{ t('menu.logout') }}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

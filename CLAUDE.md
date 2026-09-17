@@ -74,7 +74,11 @@ src/
 │   ├── useVideoAnalysis.ts      # 视频分析全局状态
 │   ├── useAuth.ts               # 认证状态管理
 │   ├── useFavorites.ts          # 收藏功能管理
-│   └── useProfile.ts            # 个人资料管理
+│   ├── useProfile.ts            # 个人资料管理
+│   └── useLocale.ts             # 多语言状态（模块级单例）
+├── locales/
+│   ├── zh.ts                    # 中文语言包（字典键的基准类型）
+│   └── en.ts                    # 英文语言包（typeof zh 强制键一致）
 ├── config/
 │   └── models.ts                # 模型配置
 ├── lib/
@@ -178,7 +182,40 @@ const body = {
 - `VIDEO_ANALYSIS_PROMPT` - 视频拆解模式（analyze）
 - `VIDEO_CREATE_PROMPT` - 从零创作模式（create）
 - `VIDEO_REFERENCE_PROMPT` - 参考生成模式（reference）
-- `getPromptByMode(mode)` - 根据模式获取对应提示词
+- `getPromptByMode(mode, locale)` - 根据模式和输出语言获取提示词
+- `buildPromptByMode(mode, context, locale)` - 携带用户输入构建提示词
+- 英文模式（locale='en'）会在提示词末尾追加 `ENGLISH_OUTPUT_DIRECTIVE`，要求固定英文表头（No./Shot/Camera/...）
+
+### 多语言（i18n）
+
+自建轻量方案（不依赖 vue-i18n），与项目模块级单例风格一致：
+
+- `src/composables/useLocale.ts` - `locale` ref（'zh' | 'en'）+ `t(key, params)` + `setLocale`，localStorage 键 `app_locale`
+- `src/locales/zh.ts` - 中文字典（类型基准）；`en.ts` - 英文字典（`typeof zh` 约束键完全一致，编译期校验）
+- 字典键按分组命名：`common.*` / `menu.*` / `analyze.*` / `create.*` / `panel.*` / `field.*` / `api.*` 等
+- 右上角语言切换：`AppLayout` 顶栏的 `LanguageSwitcher` 组件
+- **AI 输出语言**：`analyzeVideo`/`generateScript` 的 `locale` 参数（`OutputLocale` 类型）控制结果语言；`parseMarkdownTable` 同时兼容中英文表头定位
+- 新增文案时：先加 `zh.ts` 键，再加 `en.ts` 同名键（漏键会编译报错）
+- CreateModePanel 的 `videoTypes` 是 computed，模板由字段 label 生成，语言切换自动跟随
+- **初始语言检测**：localStorage 显式选择 > 中国时区（Asia/Shanghai 等）> 浏览器语言 zh* > 默认英文
+
+### Google AdSense
+
+- `src/lib/adsense.ts` - 发布商 ID 读取（`VITE_ADSENSE_CLIENT`）+ 脚本懒加载单例；未配置 `ca-pub-` 前缀 ID 时完全不加载、不渲染
+- `src/components/AdSlot.vue` - 广告位组件，挂载时渲染 `<ins>` 并 push（SPA 路由切换自动刷新）；加载失败静默隐藏
+- 广告位：首页底部（`ADSENSE_SLOT_HOME`）、分析/生成结果区底部（`ADSENSE_SLOT_RESULT`），避开操作区
+- `public/ads.txt` - 授权文件（需替换为自己的 pub- ID）
+- `/privacy` 隐私政策页（AdSense 审核必备，双语）
+- 新增环境变量后需在 Vercel 项目设置中同步配置
+
+### SEO
+
+- **静态 meta**（index.html）：title/description/keywords、Open Graph、Twitter Card、canonical、JSON-LD WebApplication 结构化数据
+- **路由动态 meta**（router/index.ts）：每路由 `meta.description`（i18n 键），beforeEach 写入 description/og:title/og:url/canonical；`SITE_URL` 常量与 sitemap/robots 保持一致
+- **爬虫文件**（public/）：robots.txt（屏蔽 /profile、/favorites）、sitemap.xml（4 个公开路由）、og-image.png（1200×630 分享图）
+- 首页 h1 含 sr-only 关键词（`home.heroSeoTitle`）
+- **正式域名**：`www.youmedhub.com`（canonical/og:url/SITE_URL/sitemap/robots 已统一）；如再次更换域名需同步修改 `index.html`、`router/index.ts`、`robots.txt`、`sitemap.xml` 四处
+- SPA 无 SSR，社交爬虫只看到 index.html 的静态 meta；如需进一步提升，后续可考虑预渲染或 Nuxt 迁移
 
 ### 环境变量
 
@@ -186,6 +223,7 @@ const body = {
 
 - `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` - Supabase（必须）
 - `VITE_DASHSCOPE_API_KEY` - 阿里百炼（可选，可在界面配置）
+- `VITE_ADSENSE_CLIENT` / `VITE_ADSENSE_SLOT_HOME` / `VITE_ADSENSE_SLOT_RESULT` - Google AdSense（可选，未配置时不渲染广告）
 
 > **v0.2.3 变更**：移除了所有 OSS 相关环境变量（`VITE_ALIYUN_OSS_*`、`ALIYUN_*`），使用百炼临时存储。
 
@@ -198,10 +236,10 @@ const body = {
 ### AI 模型约束
 
 - **仅使用阿里百炼 qwen 系列模型**
-- 文本生成：`qwen3.5-flash`（快速）或 `qwen3.5-plus`（高质量）
+- 文本生成：`qwen3.8-flash`（快速）、`qwen3.8-max`（高质量，支持长视频解析），上一代 `qwen3.7-flash` / `qwen3.7-plus`
 - 多模态（图片理解）：`qwen-vl-max`
-- **禁止使用** qwen2.5、qwen3、deepseek 等其他模型系列
-- 模型选择 UI 只展示 qwen3.5-flash 和 qwen3.5-plus
+- **禁止使用**：`qwen3.7-max`（纯文本，不支持视频/图片输入）、qwen2.5、qwen3、qwen3.5、deepseek 等其他模型系列
+- 模型选择 UI 展示 qwen3.8-flash、qwen3.8-max、qwen3.7-flash、qwen3.7-plus
 
 ## 已知限制
 

@@ -7,8 +7,10 @@ import {
   TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Clock } from 'lucide-vue-next'
+import { useLocale } from '@/composables/useLocale'
 
 const va = useVideoAnalysis()
+const { t } = useLocale()
 
 const shotTypeColor = 'bg-blue-100 text-blue-700'
 const cameraMovementColor = 'bg-amber-100 text-amber-700'
@@ -36,19 +38,19 @@ const isAnalyzeMode = computed(() => va.analysisMode.value === 'analyze')
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead class="w-12 text-center text-xs">序号</TableHead>
-          <TableHead class="w-32 text-center text-xs">景别/运镜</TableHead>
-          <TableHead class="min-w-[160px] text-xs">画面内容</TableHead>
-          <TableHead class="min-w-[160px] text-xs">拍摄指导</TableHead>
-          <TableHead class="min-w-[100px] text-xs">画面文案/花字</TableHead>
-          <TableHead class="min-w-[100px] text-xs">口播/台词</TableHead>
-          <TableHead class="min-w-[80px] text-xs">音效/BGM</TableHead>
-          <TableHead class="w-28 text-center text-xs">时间</TableHead>
+          <TableHead class="w-12 text-center text-xs">{{ t('table.sequence') }}</TableHead>
+          <TableHead class="w-32 text-center text-xs">{{ t('table.shotCamera') }}</TableHead>
+          <TableHead class="min-w-[160px] text-xs">{{ t('table.visual') }}</TableHead>
+          <TableHead class="min-w-[160px] text-xs">{{ t('table.guide') }}</TableHead>
+          <TableHead class="min-w-[100px] text-xs">{{ t('table.onScreen') }}</TableHead>
+          <TableHead class="min-w-[100px] text-xs">{{ t('table.voiceover') }}</TableHead>
+          <TableHead class="min-w-[80px] text-xs">{{ t('table.audio') }}</TableHead>
+          <TableHead class="w-28 text-center text-xs">{{ t('table.time') }}</TableHead>
           <TableHead
             v-if="isAnalyzeMode"
             class="w-48 text-center text-xs"
           >
-            视频预览
+            {{ t('table.preview') }}
           </TableHead>
         </TableRow>
       </TableHeader>

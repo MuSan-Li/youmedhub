@@ -24,7 +24,7 @@ export { formatFileSize, validateFile, validateVideoFile, validateImageFile }
  * 上传文件到临时存储（兼容旧接口）
  *
  * @param file 要上传的文件
- * @param model 目标模型（内部 model ID，如 'qwen3.5-flash'）
+ * @param model 目标模型（内部 model ID，如 'qwen3.8-flash'）
  * @param apiKey 百炼 API Key（必填）
  * @param onProgress 上传进度回调
  * @returns 上传结果

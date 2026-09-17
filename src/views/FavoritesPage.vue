@@ -25,11 +25,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Search, Trash2, FileText, Calendar, Layers, Clock } from 'lucide-vue-next'
+import { useLocale } from '@/composables/useLocale'
 
 const router = useRouter()
 const favorites = useFavorites()
 const videoAnalysis = useVideoAnalysis()
 const { toast } = useToast()
+const { t, locale } = useLocale()
 
 const searchQuery = ref('')
 const deleteTarget = ref<FavoriteItem | null>(null)
@@ -41,7 +43,7 @@ onMounted(async () => {
     await favorites.loadFavorites()
   } catch (e) {
     toast({
-      title: '加载失败',
+      title: t('favorites.loadFail'),
       description: e instanceof Error ? e.message : '未知错误',
       variant: 'destructive',
     })
@@ -65,7 +67,7 @@ const filteredFavorites = computed(() => {
 const groupedFavorites = computed(() => {
   const groups: Record<string, FavoriteItem[]> = {}
   for (const item of filteredFavorites.value) {
-    const date = new Date(item.created_at).toLocaleDateString('zh-CN', {
+    const date = new Date(item.created_at).toLocaleDateString(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -97,11 +99,11 @@ async function handleDelete() {
   try {
     await favorites.deleteFavorite(deleteTarget.value.id)
     toast({
-      title: '删除成功',
+      title: t('favorites.deleteSuccess'),
     })
   } catch (e) {
     toast({
-      title: '删除失败',
+      title: t('favorites.deleteFail'),
       description: e instanceof Error ? e.message : '未知错误',
       variant: 'destructive',
     })
@@ -119,7 +121,7 @@ function formatDuration(seconds: number): string {
 
 // 格式化时间
 function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString('zh-CN', {
+  return new Date(dateStr).toLocaleTimeString(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit',
   })
@@ -131,9 +133,9 @@ function formatTime(dateStr: string): string {
     <!-- 头部 -->
     <div class="shrink-0 border-b p-4">
       <div class="flex items-center gap-4">
-        <h1 class="text-xl font-semibold">我的收藏</h1>
+        <h1 class="text-xl font-semibold">{{ t('favorites.title') }}</h1>
         <Badge variant="secondary">
-          {{ favorites.favorites.value.length }} 条
+          {{ t('favorites.count', { n: favorites.favorites.value.length }) }}
         </Badge>
       </div>
 
@@ -142,7 +144,7 @@ function formatTime(dateStr: string): string {
         <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           v-model="searchQuery"
-          placeholder="搜索收藏..."
+          :placeholder="t('favorites.searchPlaceholder')"
           class="pl-9"
         />
       </div>
@@ -152,7 +154,7 @@ function formatTime(dateStr: string): string {
     <div class="flex-1 overflow-y-auto p-4">
       <!-- 加载中 -->
       <div v-if="loading" class="flex items-center justify-center py-12">
-        <div class="text-muted-foreground">加载中...</div>
+        <div class="text-muted-foreground">{{ t('common.loading') }}</div>
       </div>
 
       <!-- 空状态 -->
@@ -161,8 +163,8 @@ function formatTime(dateStr: string): string {
         class="flex flex-col items-center justify-center py-12 text-muted-foreground"
       >
         <FileText class="h-12 w-12 mb-4 opacity-50" />
-        <p>暂无收藏</p>
-        <p class="text-sm mt-1">分析视频后点击收藏按钮保存脚本</p>
+        <p>{{ t('favorites.empty') }}</p>
+        <p class="text-sm mt-1">{{ t('favorites.emptyHint') }}</p>
       </div>
 
       <!-- 无搜索结果 -->
@@ -171,7 +173,7 @@ function formatTime(dateStr: string): string {
         class="flex flex-col items-center justify-center py-12 text-muted-foreground"
       >
         <Search class="h-12 w-12 mb-4 opacity-50" />
-        <p>未找到匹配的收藏</p>
+        <p>{{ t('favorites.noResults') }}</p>
       </div>
 
       <!-- 分组列表 -->
@@ -205,7 +207,7 @@ function formatTime(dateStr: string): string {
                 <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <div class="flex items-center gap-1">
                     <Layers class="h-3.5 w-3.5" />
-                    {{ item.shot_count }} 个分镜
+                    {{ t('favorites.shotCount', { n: item.shot_count }) }}
                   </div>
                   <div v-if="item.source_video_duration" class="flex items-center gap-1">
                     <Clock class="h-3.5 w-3.5" />
@@ -232,15 +234,15 @@ function formatTime(dateStr: string): string {
     <AlertDialog :open="!!deleteTarget" @update:open="deleteTarget = null">
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>确认删除</AlertDialogTitle>
+          <AlertDialogTitle>{{ t('favorites.deleteTitle') }}</AlertDialogTitle>
           <AlertDialogDescription>
-            确定要删除「{{ deleteTarget?.title }}」吗？此操作不可撤销。
+            {{ t('favorites.deleteDesc', { title: deleteTarget?.title || '' }) }}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
           <AlertDialogAction @click="handleDelete" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            删除
+            {{ t('common.delete') }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -17,19 +17,35 @@ export interface ModelConfig {
  */
 export const AVAILABLE_MODELS: ModelConfig[] = [
   {
-    id: 'qwen3.5-flash',
-    name: 'Qwen3.5 Flash',
+    id: 'qwen3.8-flash',
+    name: 'Qwen3.8 Flash',
     provider: 'aliyun',
     providerName: '阿里百炼',
-    description: '通义千问 3.5 快速版',
+    description: '通义千问 3.8 快速版',
     capabilities: ['video', 'image', 'text'],
   },
   {
-    id: 'qwen3.5-plus',
-    name: 'Qwen3.5 Plus',
+    id: 'qwen3.8-max',
+    name: 'Qwen3.8 Max',
     provider: 'aliyun',
     providerName: '阿里百炼',
-    description: '通义千问 3.5 增强版',
+    description: '通义千问 3.8 旗舰版',
+    capabilities: ['video', 'image', 'text'],
+  },
+  {
+    id: 'qwen3.7-flash',
+    name: 'Qwen3.7 Flash',
+    provider: 'aliyun',
+    providerName: '阿里百炼',
+    description: '通义千问 3.7 快速版（上一代）',
+    capabilities: ['video', 'image', 'text'],
+  },
+  {
+    id: 'qwen3.7-plus',
+    name: 'Qwen3.7 Plus',
+    provider: 'aliyun',
+    providerName: '阿里百炼',
+    description: '通义千问 3.7 增强版（上一代）',
     capabilities: ['video', 'image', 'text'],
   },
 ]
@@ -44,7 +60,7 @@ export const MODELS_BY_PROVIDER = {
 /**
  * 默认模型 ID
  */
-export const DEFAULT_MODEL_ID = 'qwen3.5-flash'
+export const DEFAULT_MODEL_ID = 'qwen3.8-flash'
 
 /**
  * 根据 ID 获取模型配置

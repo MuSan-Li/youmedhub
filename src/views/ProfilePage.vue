@@ -35,12 +35,14 @@ import {
   LogOut,
   Pencil,
 } from 'lucide-vue-next'
+import { useLocale } from '@/composables/useLocale'
 
 const router = useRouter()
 const auth = useAuth()
 const profile = useProfile()
 const favorites = useFavorites()
 const { toast } = useToast()
+const { t, locale } = useLocale()
 
 const loading = ref(true)
 const editDialogOpen = ref(false)
@@ -49,7 +51,7 @@ const saving = ref(false)
 
 // 格式化日期
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('zh-CN', {
+  return new Date(dateStr).toLocaleDateString(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -73,7 +75,7 @@ async function saveNickname() {
   const trimmedName = editNickname.value.trim()
   if (!trimmedName) {
     toast({
-      title: '昵称不能为空',
+      title: t('profile.nicknameRequired'),
       variant: 'destructive',
     })
     return
@@ -88,12 +90,12 @@ async function saveNickname() {
   try {
     await profile.updateNickname(trimmedName)
     toast({
-      title: '昵称修改成功',
+      title: t('profile.nicknameUpdated'),
     })
     editDialogOpen.value = false
   } catch (e) {
     toast({
-      title: '修改失败',
+      title: t('profile.saveFail'),
       description: e instanceof Error ? e.message : '未知错误',
       variant: 'destructive',
     })
@@ -108,11 +110,11 @@ async function handleSignOut() {
     await auth.signOut()
     router.push('/')
     toast({
-      title: '已退出登录',
+      title: t('menu.logoutSuccess'),
     })
   } catch (e) {
     toast({
-      title: '退出失败',
+      title: t('menu.logoutFailed'),
       description: e instanceof Error ? e.message : '未知错误',
       variant: 'destructive',
     })
@@ -126,7 +128,7 @@ onMounted(async () => {
     await favorites.loadFavorites()
   } catch (e) {
     toast({
-      title: '加载失败',
+      title: t('favorites.loadFail'),
       description: e instanceof Error ? e.message : '未知错误',
       variant: 'destructive',
     })
@@ -140,7 +142,7 @@ onMounted(async () => {
   <div class="h-full overflow-y-auto">
     <!-- 加载中 -->
     <div v-if="loading" class="flex items-center justify-center h-full">
-      <div class="text-muted-foreground">加载中...</div>
+      <div class="text-muted-foreground">{{ t('common.loading') }}</div>
     </div>
 
     <!-- 主内容 -->
@@ -148,7 +150,7 @@ onMounted(async () => {
       <!-- 个人信息卡片 -->
       <Card>
         <CardHeader>
-          <CardTitle class="text-lg">个人信息</CardTitle>
+          <CardTitle class="text-lg">{{ t('profile.infoTitle') }}</CardTitle>
         </CardHeader>
         <CardContent>
           <div class="flex items-start gap-6">
@@ -186,7 +188,7 @@ onMounted(async () => {
               <div class="flex items-center gap-2 text-muted-foreground">
                 <Calendar class="h-4 w-4" />
                 <span class="text-sm">
-                  {{ profile.profile.value ? formatDate(profile.profile.value.created_at) : '未知' }} 加入
+                  {{ profile.profile.value ? t('profile.joinedAt', { date: formatDate(profile.profile.value.created_at) }) : t('profile.unknownDate') }}
                 </span>
               </div>
             </div>
@@ -203,7 +205,7 @@ onMounted(async () => {
             </div>
             <div>
               <div class="text-2xl font-bold">{{ favorites.favorites.value.length }}</div>
-              <div class="text-sm text-muted-foreground">收藏脚本</div>
+              <div class="text-sm text-muted-foreground">{{ t('profile.favoriteScripts') }}</div>
             </div>
           </div>
         </CardContent>
@@ -216,7 +218,7 @@ onMounted(async () => {
         @click="handleSignOut"
       >
         <LogOut class="h-4 w-4 mr-2" />
-        退出登录
+        {{ t('profile.signOut') }}
       </Button>
     </div>
 
@@ -224,17 +226,17 @@ onMounted(async () => {
     <Dialog v-model:open="editDialogOpen">
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>修改昵称</DialogTitle>
+          <DialogTitle>{{ t('profile.editNicknameTitle') }}</DialogTitle>
           <DialogDescription>
-            输入新的昵称
+            {{ t('profile.editNicknameDesc') }}
           </DialogDescription>
         </DialogHeader>
         <div class="py-4">
-          <Label for="nickname">昵称</Label>
+          <Label for="nickname">{{ t('profile.nickname') }}</Label>
           <Input
             id="nickname"
             v-model="editNickname"
-            placeholder="请输入昵称"
+            :placeholder="t('profile.nicknamePlaceholder')"
             class="mt-2"
             maxlength="20"
             @keyup.enter="saveNickname"
@@ -242,10 +244,10 @@ onMounted(async () => {
         </div>
         <DialogFooter>
           <Button variant="outline" @click="editDialogOpen = false">
-            取消
+            {{ t('common.cancel') }}
           </Button>
           <Button :disabled="saving" @click="saveNickname">
-            {{ saving ? '保存中...' : '保存' }}
+            {{ saving ? t('profile.saving') : t('common.save') }}
           </Button>
         </DialogFooter>
       </DialogContent>

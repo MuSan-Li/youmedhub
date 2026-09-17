@@ -2,15 +2,17 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { LogIn, LogOut, User } from 'lucide-vue-next'
+import { useLocale } from '@/composables/useLocale'
 
 const router = useRouter()
+const { t } = useLocale()
 
 // TODO: 集成 useAuth
 const isAuthenticated = ref(false)
 const user = ref<{ email: string; nickname: string } | null>(null)
 
 const displayName = computed(() => {
-  return user.value?.nickname || user.value?.email?.split('@')[0] || '用户'
+  return user.value?.nickname || user.value?.email?.split('@')[0] || t('user.defaultName')
 })
 
 function handleLogin() {
@@ -51,14 +53,14 @@ function handleProfile() {
           @click="handleProfile"
         >
           <User class="h-4 w-4" />
-          <span>个人中心</span>
+          <span>{{ t('menu.profile') }}</span>
         </button>
         <button
           class="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted"
           @click="handleLogout"
         >
           <LogOut class="h-4 w-4" />
-          <span>退出</span>
+          <span>{{ t('menu.logout') }}</span>
         </button>
       </template>
       <template v-else>
@@ -67,7 +69,7 @@ function handleProfile() {
           @click="handleLogin"
         >
           <LogIn class="h-4 w-4" />
-          <span>登录</span>
+          <span>{{ t('menu.login') }}</span>
         </button>
       </template>
     </div>
