@@ -7,6 +7,8 @@ import { uploadToTemporaryFile } from '@/api/temporaryFile'
 import { logUsage } from '@/api/usageLog'
 import { AVAILABLE_MODELS } from '@/config/models'
 import { useLocale } from '@/composables/useLocale'
+import { useModelSelect } from '@/composables/useModelSelect'
+import { extractErrorMessage } from '@/lib/errors'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,31 +33,11 @@ const showAuthDialog = ref(false)
 const isUploading = ref(false)
 const uploadProgress = ref(0)
 
-// 模型切换提示
-const modelChangeMessage = ref('')
-// 提示清除定时器（切换多次时先清旧定时器，避免新提示被提前清掉）
-let modelChangeTimer: ReturnType<typeof setTimeout> | null = null
-
-// 模型选择
-const selectedModelId = computed({
-  get: () => va.selectedModel.value.id,
-  set: (val: string) => {
-    const oldModelId = va.selectedModel.value.id
-    const model = AVAILABLE_MODELS.find(m => m.id === val)
-    if (model) {
-      va.setSelectedModel(model)
-      // 如果模型变化且有已上传的文件，显示提示（5 秒后自动清除）
-      if (oldModelId && oldModelId !== val && (va.videoUrl.value || va.imageUrls.value.length > 0)) {
-        modelChangeMessage.value = t('analyze.modelChanged')
-        if (modelChangeTimer) clearTimeout(modelChangeTimer)
-        modelChangeTimer = setTimeout(() => {
-          modelChangeMessage.value = ''
-          modelChangeTimer = null
-        }, 5000)
-      }
-    }
-  }
-})
+// 模型选择 + 切换重传提示
+const { selectedModelId, modelChangeMessage } = useModelSelect(
+  'analyze.modelChanged',
+  () => !!(va.videoUrl.value || va.imageUrls.value.length > 0)
+)
 
 // 思考模式开关
 const enableThinking = computed({
@@ -101,7 +83,7 @@ async function uploadVideo(): Promise<string> {
     return result.downloadLink
   } catch (e) {
     va.uploadStatus.value = 'error'
-    throw new Error(e instanceof Error ? e.message : t('analyze.uploadFail'))
+    throw new Error(extractErrorMessage(e, 'analyze.uploadFail'))
   } finally {
     isUploading.value = false
   }
@@ -169,7 +151,7 @@ async function startAnalysis() {
     // 统计上报（静默失败，不影响主流程）
     void logUsage('analyze', va.selectedModel.value.id)
   } catch (e) {
-    errorMessage.value = e instanceof Error ? e.message : t('analyze.operationFail')
+    errorMessage.value = extractErrorMessage(e, 'analyze.operationFail')
     console.error('[startAnalysis] failed:', e)
     va.analysisStatus.value = 'error'
     va.isThinking.value = false

@@ -5,6 +5,8 @@ import { uploadToTemporaryFile } from '@/api/temporaryFile'
 import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
 import { useFavorites } from '@/composables/useFavorites'
 import { useLocale } from '@/composables/useLocale'
+import { useModelSelect } from '@/composables/useModelSelect'
+import { extractErrorMessage } from '@/lib/errors'
 import { AVAILABLE_MODELS } from '@/config/models'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -134,28 +136,11 @@ const scriptCountNumber = computed(() => {
   return Math.min(5, Math.max(1, num))
 })
 
-// 提示清除定时器（切换多次时先清旧定时器，避免新提示被提前清掉）
-let modelChangeTimer: ReturnType<typeof setTimeout> | null = null
-
-const selectedModelId = computed({
-  get: () => va.selectedModel.value.id,
-  set: (val: string) => {
-    const oldModelId = va.selectedModel.value.id
-    const model = AVAILABLE_MODELS.find(m => m.id === val)
-    if (model) {
-      va.setSelectedModel(model)
-      // 如果模型变化且有已上传的文件，显示提示（5 秒后自动清除）
-      if (oldModelId && oldModelId !== val && va.imageUrls.value.length > 0) {
-        modelChangeMessage.value = t('panel.modelChangedImages')
-        if (modelChangeTimer) clearTimeout(modelChangeTimer)
-        modelChangeTimer = setTimeout(() => {
-          modelChangeMessage.value = ''
-          modelChangeTimer = null
-        }, 5000)
-      }
-    }
-  },
-})
+// 模型选择 + 切换重传提示
+const { selectedModelId, modelChangeMessage } = useModelSelect(
+  'panel.modelChangedImages',
+  () => va.imageUrls.value.length > 0
+)
 
 // 思考模式开关
 const enableThinking = computed({
@@ -180,9 +165,6 @@ const canGenerate = computed(() => {
   const lines = text.split('\n').filter(line => line.trim() && !line.startsWith('##'))
   return lines.length > 0
 })
-
-// 模型切换提示
-const modelChangeMessage = ref('')
 
 function handleVideoTypeChange(typeKey: string) {
   if (typeKey === selectedVideoType.value) return
@@ -359,7 +341,7 @@ async function handleAiOptimize() {
 
     hasUserEdited.value = true
   } catch (error) {
-    aiOptimizeError.value = error instanceof Error ? error.message : t('panel.aiOptimizeFail')
+    aiOptimizeError.value = extractErrorMessage(error, 'panel.aiOptimizeFail')
   } finally {
     aiOptimizing.value = false
   }

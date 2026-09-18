@@ -99,5 +99,7 @@ function setLocale(next: Locale) {
 export function useLocale() {
   const currentLocale = computed(() => locale.value)
   const isZh = computed(() => locale.value === 'zh')
-  return { locale: currentLocale, isZh, t: translate, setLocale }
+  // Intl API 用的语言标签（日期格式化等）
+  const localeTag = computed(() => (locale.value === 'zh' ? 'zh-CN' : 'en-US'))
+  return { locale: currentLocale, isZh, localeTag, t: translate, setLocale }
 }

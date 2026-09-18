@@ -17,6 +17,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Brain, Sparkles, FileText, ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { useLocale } from '@/composables/useLocale'
+import { useModelSelect } from '@/composables/useModelSelect'
 
 const va = useVideoAnalysis()
 const favorites = useFavorites()
@@ -52,16 +53,8 @@ const enableThinkingModel = computed({
   set: (val: boolean) => { va.enableThinking.value = val }
 })
 
-// 模型选择
-const selectedModelId = computed({
-  get: () => va.selectedModel.value.id,
-  set: (val: string) => {
-    const model = AVAILABLE_MODELS.find(m => m.id === val)
-    if (model) {
-      va.setSelectedModel(model)
-    }
-  }
-})
+// 模型选择（无已绑定文件场景，不显示切换提示）
+const { selectedModelId } = useModelSelect('', () => false)
 
 // 选中的收藏
 const selectedFavorite = computed(() => {

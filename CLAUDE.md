@@ -75,16 +75,19 @@ src/
 │   ├── useAuth.ts               # 认证状态管理
 │   ├── useFavorites.ts          # 收藏功能管理
 │   ├── useProfile.ts            # 个人资料管理
-│   └── useLocale.ts             # 多语言状态（模块级单例）
+│   ├── useLocale.ts             # 多语言状态（模块级单例，含 localeTag）
+│   └── useModelSelect.ts        # 模型选择 + 切换重传提示（三面板共用）
 ├── locales/
 │   ├── zh.ts                    # 中文语言包（字典键的基准类型）
 │   └── en.ts                    # 英文语言包（typeof zh 强制键一致）
 ├── config/
-│   └── models.ts                # 模型配置（qwen3.8/qwen3.7 系列，见「AI 模型约束」）
+│   ├── models.ts                # 模型配置（qwen3.8/qwen3.7 系列，见「AI 模型约束」）
+│   └── site.ts                  # 站点地址 SITE_URL（静态文件需手动同步）
 ├── lib/
 │   ├── utils.ts                 # cn() 类名合并
 │   ├── supabase.ts              # Supabase 客户端
-│   └── openai-client.ts         # OpenAI 兼容客户端
+│   ├── openai-client.ts         # OpenAI 兼容客户端
+│   └── errors.ts                # extractErrorMessage 错误消息提取
 ├── prompts/
 │   └── videoAnalysis.ts         # AI 提示词（三种模式）
 ├── router/

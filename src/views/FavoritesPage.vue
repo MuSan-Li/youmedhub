@@ -31,7 +31,7 @@ const router = useRouter()
 const favorites = useFavorites()
 const videoAnalysis = useVideoAnalysis()
 const { toast } = useToast()
-const { t, locale } = useLocale()
+const { t, localeTag } = useLocale()
 
 const searchQuery = ref('')
 const deleteTarget = ref<FavoriteItem | null>(null)
@@ -44,7 +44,7 @@ onMounted(async () => {
   } catch (e) {
     toast({
       title: t('favorites.loadFail'),
-      description: e instanceof Error ? e.message : '未知错误',
+      description: e instanceof Error ? e.message : t('common.unknownError'),
       variant: 'destructive',
     })
   } finally {
@@ -67,7 +67,7 @@ const filteredFavorites = computed(() => {
 const groupedFavorites = computed(() => {
   const groups: Record<string, FavoriteItem[]> = {}
   for (const item of filteredFavorites.value) {
-    const date = new Date(item.created_at).toLocaleDateString(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
+    const date = new Date(item.created_at).toLocaleDateString(localeTag.value, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -104,7 +104,7 @@ async function handleDelete() {
   } catch (e) {
     toast({
       title: t('favorites.deleteFail'),
-      description: e instanceof Error ? e.message : '未知错误',
+      description: e instanceof Error ? e.message : t('common.unknownError'),
       variant: 'destructive',
     })
   } finally {
@@ -121,7 +121,7 @@ function formatDuration(seconds: number): string {
 
 // 格式化时间
 function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
+  return new Date(dateStr).toLocaleTimeString(localeTag.value, {
     hour: '2-digit',
     minute: '2-digit',
   })

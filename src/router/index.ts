@@ -1,9 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/composables/useLocale'
-
-// 站点线上地址（换自定义域名时同步修改，与 sitemap.xml/robots.txt 保持一致）
-const SITE_URL = 'https://www.youmedhub.com'
+import { SITE_URL } from '@/config/site'
 
 function setMeta(name: string, content: string | null) {
   let tag = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)

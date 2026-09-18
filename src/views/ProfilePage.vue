@@ -42,7 +42,7 @@ const auth = useAuth()
 const profile = useProfile()
 const favorites = useFavorites()
 const { toast } = useToast()
-const { t, locale } = useLocale()
+const { t, localeTag } = useLocale()
 
 const loading = ref(true)
 const editDialogOpen = ref(false)
@@ -51,7 +51,7 @@ const saving = ref(false)
 
 // 格式化日期
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
+  return new Date(dateStr).toLocaleDateString(localeTag.value, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -96,7 +96,7 @@ async function saveNickname() {
   } catch (e) {
     toast({
       title: t('profile.saveFail'),
-      description: e instanceof Error ? e.message : '未知错误',
+      description: e instanceof Error ? e.message : t('common.unknownError'),
       variant: 'destructive',
     })
   } finally {
@@ -115,7 +115,7 @@ async function handleSignOut() {
   } catch (e) {
     toast({
       title: t('menu.logoutFailed'),
-      description: e instanceof Error ? e.message : '未知错误',
+      description: e instanceof Error ? e.message : t('common.unknownError'),
       variant: 'destructive',
     })
   }
@@ -129,7 +129,7 @@ onMounted(async () => {
   } catch (e) {
     toast({
       title: t('favorites.loadFail'),
-      description: e instanceof Error ? e.message : '未知错误',
+      description: e instanceof Error ? e.message : t('common.unknownError'),
       variant: 'destructive',
     })
   } finally {

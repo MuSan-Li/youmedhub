@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { buildPromptByMode, generateScript, type AIModel } from '@/api/videoAnalysis'
 import { uploadToTemporaryFile } from '@/api/temporaryFile'
 import { logUsage } from '@/api/usageLog'
+import { extractErrorMessage } from '@/lib/errors'
 import VideoUploader from '@/components/VideoUploader.vue'
 import VideoPreview from '@/components/VideoPreview.vue'
 import AnalysisControl from '@/components/AnalysisControl.vue'
@@ -242,7 +243,7 @@ async function handleStartGenerate() {
         va.appendScriptCandidate(candidate)
         successCount += 1
       } else {
-        const message = result.reason instanceof Error ? result.reason.message : t('create.fail')
+        const message = extractErrorMessage(result.reason, 'create.fail')
         errorMessages.push(t('create.candidateError', { n: i + 1, message }))
       }
     })
@@ -264,7 +265,7 @@ async function handleStartGenerate() {
     // 统计上报（静默失败，不影响主流程；多方案生成记一次使用）
     void logUsage(hasReferenceScript ? 'reference' : 'create', model)
   } catch (e) {
-    generateErrorMessage.value = e instanceof Error ? e.message : t('create.failRetry')
+    generateErrorMessage.value = extractErrorMessage(e, 'create.failRetry')
     console.error('[handleStartGenerate] failed:', e)
     va.analysisStatus.value = 'error'
     va.isThinking.value = false
