@@ -7,7 +7,7 @@ import { useFavorites } from '@/composables/useFavorites'
 import { useLocale } from '@/composables/useLocale'
 import { useModelSelect } from '@/composables/useModelSelect'
 import { extractErrorMessage } from '@/lib/errors'
-import { AVAILABLE_MODELS } from '@/config/models'
+import { CREATE_MODELS, CREATE_DEFAULT_MODEL_ID, getModelById } from '@/config/models'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -141,6 +141,12 @@ const { selectedModelId, modelChangeMessage } = useModelSelect(
   'panel.modelChangedImages',
   () => va.imageUrls.value.length > 0
 )
+
+// 生成页仅展示指定模型；当前选中模型不在列表时校正为本页默认
+if (!CREATE_MODELS.some(m => m.id === va.selectedModel.value.id)) {
+  const fallback = getModelById(CREATE_DEFAULT_MODEL_ID)
+  if (fallback) va.setSelectedModel(fallback)
+}
 
 // 思考模式开关
 const enableThinking = computed({
@@ -508,7 +514,7 @@ defineExpose({
           </SelectTrigger>
           <SelectContent class="max-w-[50vw]">
             <SelectItem
-              v-for="model in AVAILABLE_MODELS"
+              v-for="model in CREATE_MODELS"
               :key="model.id"
               :value="model.id"
             >

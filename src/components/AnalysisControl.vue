@@ -6,7 +6,7 @@ import { analyzeVideo, type AIModel } from '@/api/videoAnalysis'
 import { uploadToTemporaryFile } from '@/api/temporaryFile'
 import { logUsage } from '@/api/usageLog'
 import { transcribeVideo, type TranscriptSentence } from '@/api/asr'
-import { AVAILABLE_MODELS, supportsNativeAudio } from '@/config/models'
+import { ANALYZE_MODELS, ANALYZE_DEFAULT_MODEL_ID, getModelById, supportsNativeAudio } from '@/config/models'
 import { useLocale } from '@/composables/useLocale'
 import { useModelSelect } from '@/composables/useModelSelect'
 import { extractErrorMessage } from '@/lib/errors'
@@ -42,6 +42,12 @@ const { selectedModelId, modelChangeMessage } = useModelSelect(
   'analyze.modelChanged',
   () => !!(va.videoUrl.value || va.imageUrls.value.length > 0)
 )
+
+// 拆解页仅展示指定模型；当前选中模型不在列表时校正为本页默认
+if (!ANALYZE_MODELS.some(m => m.id === va.selectedModel.value.id)) {
+  const fallback = getModelById(ANALYZE_DEFAULT_MODEL_ID)
+  if (fallback) va.setSelectedModel(fallback)
+}
 
 // 思考模式开关
 const enableThinking = computed({
@@ -196,7 +202,7 @@ defineExpose({
         </SelectTrigger>
         <SelectContent class="max-w-[50vw]">
           <SelectItem
-            v-for="model in AVAILABLE_MODELS"
+            v-for="model in ANALYZE_MODELS"
             :key="model.id"
             :value="model.id"
           >

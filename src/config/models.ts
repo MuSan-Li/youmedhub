@@ -66,17 +66,40 @@ export const MODELS_BY_PROVIDER = {
 }
 
 /**
- * 默认模型 ID
- */
-export const DEFAULT_MODEL_ID = 'qwen3.8-omni-flash'
-
-/**
  * 是否原生理解视频音频轨（omni 系列）
  * 此类模型自带听觉，无需 ASR 前置转写
  */
 export function supportsNativeAudio(modelId: string): boolean {
   return modelId.includes('omni')
 }
+
+// ---------- 按页面区分的可选模型 ----------
+
+/**
+ * 视频拆解页（/analyze）可选模型与默认
+ */
+export const ANALYZE_MODEL_IDS = ['qwen3.8-flash', 'qwen3.8-omni-flash'] as const
+export const ANALYZE_DEFAULT_MODEL_ID = 'qwen3.8-flash'
+
+/**
+ * 脚本生成页（/create）可选模型与默认
+ */
+export const CREATE_MODEL_IDS = ['qwen3.8-max', 'qwen3.8-flash'] as const
+export const CREATE_DEFAULT_MODEL_ID = 'qwen3.8-max'
+
+/**
+ * 全局初始模型（模块加载时未知页面，取拆解页默认；各面板挂载时会校正到本页默认）
+ */
+export const DEFAULT_MODEL_ID = ANALYZE_DEFAULT_MODEL_ID
+
+function pickModels(ids: readonly string[]): ModelConfig[] {
+  return ids.map(id => getModelById(id)).filter((m): m is ModelConfig => !!m)
+}
+
+/** 视频拆解页可选模型 */
+export const ANALYZE_MODELS = pickModels(ANALYZE_MODEL_IDS)
+/** 脚本生成页可选模型 */
+export const CREATE_MODELS = pickModels(CREATE_MODEL_IDS)
 
 /**
  * 根据 ID 获取模型配置
