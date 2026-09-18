@@ -124,16 +124,18 @@ async function startAnalysis() {
     va.tokenUsage.value = null
     va.viewMode.value = 'markdown'
 
-    // 3. ASR 前置转写（失败降级：不注入转写，照常分析）
+    // 3. ASR 前置转写（qwen3-asr-flash，浏览器本地提取音轨；失败降级：不注入转写，照常分析）
     let audioTranscript: TranscriptSentence[] | undefined
-    isTranscribing.value = true
-    try {
-      audioTranscript = await transcribeVideo(videoUrl, va.currentApiKey.value)
-    } catch (e) {
-      console.warn('[startAnalysis] ASR transcription failed, falling back:', e)
-      audioTranscript = undefined
-    } finally {
-      isTranscribing.value = false
+    if (va.videoFile.value) {
+      isTranscribing.value = true
+      try {
+        audioTranscript = await transcribeVideo(va.videoFile.value, va.currentApiKey.value)
+      } catch (e) {
+        console.warn('[startAnalysis] ASR transcription failed, falling back:', e)
+        audioTranscript = undefined
+      } finally {
+        isTranscribing.value = false
+      }
     }
 
     // 调试日志
