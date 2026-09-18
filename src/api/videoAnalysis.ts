@@ -3,12 +3,14 @@ import { uploadToTemporaryFile, validateVideoFile } from './temporaryFile'
 import {
   VIDEO_ANALYSIS_PROMPT,
   buildPromptByMode,
+  buildTranscriptSection,
   getPromptByMode,
   type AnalysisMode,
   type CreatePromptContext,
   type ReferencePromptContext,
   type OutputLocale,
 } from '../prompts/videoAnalysis'
+import type { TranscriptSentence } from './asr'
 import * as analysis from './analysis'
 import type { ModelConfig } from '@/config/models'
 import { AVAILABLE_MODELS, MODELS_BY_PROVIDER, getModelById, DEFAULT_MODEL_ID } from '@/config/models'
@@ -55,6 +57,8 @@ interface BaseRequestOptions {
 export interface AnalyzeVideoOptions extends BaseRequestOptions {
   source: File | string
   mode?: AnalysisMode
+  /** ASR 前置转写（句级，带时间戳），注入提示词供台词列抄录；缺省则退回模型自身听觉 */
+  audioTranscript?: TranscriptSentence[]
 }
 
 export interface GenerateCreateScriptOptions extends BaseRequestOptions {
@@ -266,6 +270,7 @@ export async function analyzeVideo(options: AnalyzeVideoOptions): Promise<VideoA
     mode = 'analyze',
     customPrompt,
     locale = 'zh',
+    audioTranscript,
     onProgress,
     onStream,
     onTokenUsage,
@@ -273,7 +278,12 @@ export async function analyzeVideo(options: AnalyzeVideoOptions): Promise<VideoA
     onReasoning,
   } = options
 
-  const prompt = resolvePrompt(mode, customPrompt, locale)
+  let prompt = resolvePrompt(mode, customPrompt, locale)
+
+  // 注入 ASR 前置转写（方案 A），供「口播/台词」列按时间对位抄录
+  if (audioTranscript && audioTranscript.length > 0) {
+    prompt += buildTranscriptSection(audioTranscript, locale)
+  }
 
   try {
     if (typeof source === 'string') {

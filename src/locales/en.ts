@@ -358,6 +358,7 @@ export const en: typeof zh = {
 
   // 补充：上传/API 与生成拼接
   'api.getPolicyFail': 'Failed to get upload credential: {status}',
+  'api.transcribing': 'Transcribing speech (improves voiceover accuracy)...',
   'api.policyInvalid': 'Malformed upload credential response',
   'create.topicTypeValue': 'Video type: {value}',
   'create.topicRequirementLabel': 'Video brief:',

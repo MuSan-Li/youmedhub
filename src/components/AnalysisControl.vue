@@ -5,6 +5,7 @@ import { useAuth } from '@/composables/useAuth'
 import { analyzeVideo, type AIModel } from '@/api/videoAnalysis'
 import { uploadToTemporaryFile } from '@/api/temporaryFile'
 import { logUsage } from '@/api/usageLog'
+import { transcribeVideo, type TranscriptSentence } from '@/api/asr'
 import { AVAILABLE_MODELS } from '@/config/models'
 import { useLocale } from '@/composables/useLocale'
 import { useModelSelect } from '@/composables/useModelSelect'
@@ -33,6 +34,9 @@ const showAuthDialog = ref(false)
 const isUploading = ref(false)
 const uploadProgress = ref(0)
 
+// ASR 语音转写状态（方案 A：前置转写提升台词准确率，失败静默降级）
+const isTranscribing = ref(false)
+
 // 模型选择 + 切换重传提示
 const { selectedModelId, modelChangeMessage } = useModelSelect(
   'analyze.modelChanged',
@@ -50,7 +54,7 @@ const enableThinking = computed({
 const isAnalyzing = computed(() => va.isAnalyzing.value)
 const hasApiKey = computed(() => !!va.currentApiKey.value)
 const isError = computed(() => va.analysisStatus.value === 'error')
-const isProcessing = computed(() => isUploading.value || isAnalyzing.value)
+const isProcessing = computed(() => isUploading.value || isTranscribing.value || isAnalyzing.value)
 
 const errorMessage = ref('')
 
@@ -113,12 +117,24 @@ async function startAnalysis() {
       videoUrl = await uploadVideo()
     }
 
-    // 2. 开始分析
+    // 2. 进入处理态（ASR 转写 + AI 分析全程，供按钮/全局状态使用）
     va.analysisStatus.value = 'analyzing'
     va.markdownContent.value = ''
     va.scriptItems.value = []
     va.tokenUsage.value = null
     va.viewMode.value = 'markdown'
+
+    // 3. ASR 前置转写（失败降级：不注入转写，照常分析）
+    let audioTranscript: TranscriptSentence[] | undefined
+    isTranscribing.value = true
+    try {
+      audioTranscript = await transcribeVideo(videoUrl, va.currentApiKey.value)
+    } catch (e) {
+      console.warn('[startAnalysis] ASR transcription failed, falling back:', e)
+      audioTranscript = undefined
+    } finally {
+      isTranscribing.value = false
+    }
 
     // 调试日志
     console.log('[startAnalysis] enableThinking:', va.enableThinking.value)
@@ -129,6 +145,7 @@ async function startAnalysis() {
       model: va.selectedModel.value.id as AIModel,
       mode: 'analyze',
       locale: locale.value,
+      audioTranscript,
       onStream: (chunk) => {
         va.markdownContent.value += chunk
       },
@@ -222,6 +239,12 @@ defineExpose({
       </div>
       <Progress :model-value="uploadProgress" class="w-full" />
       <p class="text-xs text-muted-foreground text-center">{{ uploadProgress }}%</p>
+    </div>
+
+    <!-- ASR 转写中提示 -->
+    <div v-if="isTranscribing" class="flex items-center gap-2 text-sm">
+      <Upload class="h-4 w-4 animate-pulse text-muted-foreground" />
+      <span>{{ t('api.transcribing') }}</span>
     </div>
 
     <!-- 错误提示 -->

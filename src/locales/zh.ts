@@ -355,6 +355,7 @@ export const zh = {
 
   // 补充：上传/API 与生成拼接
   'api.getPolicyFail': '获取上传凭证失败: {status}',
+  'api.transcribing': '正在转写语音（提升台词准确率）...',
   'api.policyInvalid': '上传凭证响应格式错误',
   'create.topicTypeValue': '视频类型：{value}',
   'create.topicRequirementLabel': '视频要求：',

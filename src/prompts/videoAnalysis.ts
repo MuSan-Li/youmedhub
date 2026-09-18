@@ -54,7 +54,7 @@ const FIELD_DEFINITIONS = `
 5. **拍摄指导**：**核心字段**。请根据画面效果反推"如何复刻这个镜头"。
    - *内容要求*：使用指导性语言，包含机位高度（如：低角度仰拍）、持机方式（如：手持跟随、三脚架固定）、对焦与光线（如：锁定高光、侧逆光拍摄）、特殊技巧（如：手机倒置贴地）。
 6. **画面文案/花字**：**核心字段**。提取视频画面中出现的非语音文字信息（排除CC字幕）。
-7. **口播/台词**：记录该镜头对应的语音逐字稿。
+7. **口播/台词**：若提示词中包含「语音转写参考」段，必须按镜头时间范围从中**逐字抄录**（禁止概括、改写、润色）；若不包含，则根据视频语音逐字记录。禁止凭画面臆测台词；跨镜头的句子在结尾用「...」表示未完；镜头内无语音内容填「-」。
 8. **音效/BGM**：听到的背景音乐情绪或具体的环境音效。
 9. **开始时间**：镜头开始时间点，格式 MM:SS
 10. **结束时间**：镜头结束时间点，格式 MM:SS
@@ -203,6 +203,40 @@ export function getPromptByMode(mode: AnalysisMode, locale: OutputLocale = 'zh')
 function formatOptionalField(value?: string): string {
   const normalized = value?.trim()
   return normalized && normalized.length > 0 ? normalized : '-'
+}
+
+/**
+ * 构建语音转写参考段（方案 A：ASR 前置转写）
+ * 将专业 ASR 的句级转写注入提示词，供「口播/台词」列按时间对位抄录。
+ */
+export function buildTranscriptSection(
+  sentences: Array<{ beginMs: number; endMs: number; text: string }>,
+  locale: OutputLocale = 'zh'
+): string {
+  const mmss = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  }
+
+  const header = locale === 'en'
+    ? `# Speech Transcription Reference (from professional ASR, timestamped)
+
+Below is the verbatim transcription of this video's audio track (MM:SS-MM:SS). When filling the "Voiceover" column, you MUST copy the corresponding text within each shot's time range from this transcription. Do NOT summarize, paraphrase, or guess from visuals. If no transcript text falls within a shot's time range, output "-".
+
+`
+    : `# 语音转写参考（来自专业 ASR，带时间戳）
+
+以下是该视频音轨的逐字转写（时间格式 MM:SS-MM:SS）。填写「口播/台词」列时，必须按镜头时间范围从本转写中抄录对应文字，禁止概括、改写或凭画面臆测。若某镜头时间范围内没有转写文字，该列填「-」。
+
+`
+
+  const lines = sentences.map(
+    s => `[${mmss(s.beginMs)}-${mmss(s.endMs)}] ${s.text}`
+  )
+
+  return `\n${header}${lines.join('\n')}`
 }
 
 function buildCreatePromptContextSection(context: CreatePromptContext): string {
