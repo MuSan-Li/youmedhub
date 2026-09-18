@@ -4,6 +4,7 @@ import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
 import { useAuth } from '@/composables/useAuth'
 import { analyzeVideo, type AIModel } from '@/api/videoAnalysis'
 import { uploadToTemporaryFile } from '@/api/temporaryFile'
+import { logUsage } from '@/api/usageLog'
 import { AVAILABLE_MODELS } from '@/config/models'
 import { useLocale } from '@/composables/useLocale'
 import { Progress } from '@/components/ui/progress'
@@ -161,6 +162,9 @@ async function startAnalysis() {
     va.analysisStatus.value = 'success'
     va.isThinking.value = false
     va.viewMode.value = 'table'
+
+    // 统计上报（静默失败，不影响主流程）
+    void logUsage('analyze', va.selectedModel.value?.id || 'unknown')
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : t('analyze.operationFail')
     console.error('[startAnalysis] failed:', e)

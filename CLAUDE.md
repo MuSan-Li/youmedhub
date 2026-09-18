@@ -149,6 +149,12 @@ src/
 - `profile` / `nickname` / `avatarUrl`
 - `loadProfile` / `updateNickname`
 
+**使用统计**（`src/api/usageLog.ts`，无状态模块）：
+- `logUsage(feature, modelId)` - AI 调用成功后上报 `usage_logs` 表（谁/功能/模型/时间）
+- feature 取值：`analyze`（视频分析）/ `create`（从零创作）/ `reference`（参考生成）
+- 表结构与 RLS 见 `supabase/migrations/20260918_usage_logs.sql`（需在 Supabase SQL Editor 手动执行）
+- 统计失败静默降级，不影响主流程；数据仅通过 Supabase Dashboard 查看
+
 ### AI 提供商架构
 
 使用阿里百炼（DashScope）API：

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { buildPromptByMode, generateScript, type AIModel } from '@/api/videoAnalysis'
 import { uploadToTemporaryFile } from '@/api/temporaryFile'
+import { logUsage } from '@/api/usageLog'
 import VideoUploader from '@/components/VideoUploader.vue'
 import VideoPreview from '@/components/VideoPreview.vue'
 import AnalysisControl from '@/components/AnalysisControl.vue'
@@ -257,6 +258,9 @@ async function handleStartGenerate() {
     if (errorMessages.length > 0) {
       generateErrorMessage.value = t('create.partialFail', { errors: errorMessages.join('；') })
     }
+
+    // 统计上报（静默失败，不影响主流程；多方案生成记一次使用）
+    void logUsage(hasReferenceScript ? 'reference' : 'create', model)
   } catch (e) {
     generateErrorMessage.value = e instanceof Error ? e.message : t('create.failRetry')
     console.error('[handleStartGenerate] failed:', e)
