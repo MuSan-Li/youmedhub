@@ -355,4 +355,11 @@ export const en: typeof zh = {
   'privacy.rights.body': 'You can export or delete your saved scripts at any time, and you may delete your account or contact us to erase your data.',
   'privacy.contact.title': 'Contact us',
   'privacy.contact.body': 'For privacy questions, reach us via the GitHub repository Issues.',
+
+  // 补充：上传/API 与生成拼接
+  'api.getPolicyFail': 'Failed to get upload credential: {status}',
+  'api.policyInvalid': 'Malformed upload credential response',
+  'create.topicTypeValue': 'Video type: {value}',
+  'create.topicRequirementLabel': 'Video brief:',
+  'create.candidateError': 'Option {n}: {message}',
 }

@@ -33,21 +33,24 @@ const uploadProgress = ref(0)
 
 // 模型切换提示
 const modelChangeMessage = ref('')
+// 提示清除定时器（切换多次时先清旧定时器，避免新提示被提前清掉）
+let modelChangeTimer: ReturnType<typeof setTimeout> | null = null
 
 // 模型选择
 const selectedModelId = computed({
-  get: () => va.selectedModel.value?.id || 'qwen3.8-flash',
+  get: () => va.selectedModel.value.id,
   set: (val: string) => {
-    const oldModelId = va.selectedModel.value?.id
+    const oldModelId = va.selectedModel.value.id
     const model = AVAILABLE_MODELS.find(m => m.id === val)
     if (model) {
       va.setSelectedModel(model)
-      // 如果模型变化且有已上传的文件，显示提示
+      // 如果模型变化且有已上传的文件，显示提示（5 秒后自动清除）
       if (oldModelId && oldModelId !== val && (va.videoUrl.value || va.imageUrls.value.length > 0)) {
         modelChangeMessage.value = t('analyze.modelChanged')
-        // 3秒后自动清除提示
-        setTimeout(() => {
+        if (modelChangeTimer) clearTimeout(modelChangeTimer)
+        modelChangeTimer = setTimeout(() => {
           modelChangeMessage.value = ''
+          modelChangeTimer = null
         }, 5000)
       }
     }
@@ -86,7 +89,7 @@ async function uploadVideo(): Promise<string> {
   try {
     const result = await uploadToTemporaryFile(
       va.videoFile.value,
-      va.selectedModel.value?.id || 'qwen3.8-flash',
+      va.selectedModel.value.id,
       va.currentApiKey.value,
       (loaded, total) => {
         uploadProgress.value = total > 0 ? Math.round((loaded / total) * 100) : 0
@@ -141,7 +144,7 @@ async function startAnalysis() {
     const result = await analyzeVideo({
       source: videoUrl,
       apiKey: va.currentApiKey.value,
-      model: (va.selectedModel.value?.id || 'qwen3.8-flash') as AIModel,
+      model: va.selectedModel.value.id as AIModel,
       mode: 'analyze',
       locale: locale.value,
       onStream: (chunk) => {
@@ -164,7 +167,7 @@ async function startAnalysis() {
     va.viewMode.value = 'table'
 
     // 统计上报（静默失败，不影响主流程）
-    void logUsage('analyze', va.selectedModel.value?.id || 'unknown')
+    void logUsage('analyze', va.selectedModel.value.id)
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : t('analyze.operationFail')
     console.error('[startAnalysis] failed:', e)

@@ -11,7 +11,7 @@ import {
 } from '../prompts/videoAnalysis'
 import * as analysis from './analysis'
 import type { ModelConfig } from '@/config/models'
-import { AVAILABLE_MODELS, MODELS_BY_PROVIDER, getModelById } from '@/config/models'
+import { AVAILABLE_MODELS, MODELS_BY_PROVIDER, getModelById, DEFAULT_MODEL_ID } from '@/config/models'
 import { useLocale } from '@/composables/useLocale'
 
 // 导出提示词供组件使用
@@ -102,8 +102,11 @@ function parseMarkdownTable(markdown: string): VideoAnalysisResponse {
     const line = lines[i]
     if (!line || !line.trim() || !line.startsWith('|')) continue
 
-    // 分割单元格，去除首尾的 |
-    const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell)
+    // 分割单元格：仅去除行首尾 | 产生的空串，保留中间的空单元格
+    // （filter 会删掉空单元格导致后续列整体左移错位）
+    let cells = line.split('|').map(cell => cell.trim())
+    if (cells[0] === '') cells = cells.slice(1)
+    if (cells.length > 0 && cells[cells.length - 1] === '') cells = cells.slice(0, -1)
 
     if (cells.length >= 11) {
       rep.push({
@@ -259,7 +262,7 @@ export async function analyzeVideo(options: AnalyzeVideoOptions): Promise<VideoA
   const {
     source,
     apiKey,
-    model = 'qwen3.8-max',
+    model = DEFAULT_MODEL_ID as AIModel,
     mode = 'analyze',
     customPrompt,
     locale = 'zh',
@@ -287,7 +290,7 @@ export async function analyzeVideo(options: AnalyzeVideoOptions): Promise<VideoA
 export async function generateScript(options: GenerateScriptOptions): Promise<VideoAnalysisResponse> {
   const {
     apiKey,
-    model = 'qwen3.8-max',
+    model = DEFAULT_MODEL_ID as AIModel,
     mode,
     context,
     customPrompt,
@@ -304,8 +307,8 @@ export async function generateScript(options: GenerateScriptOptions): Promise<Vi
   onProgress?.(t('api.callingGenerate'))
 
   try {
-    // 检查是否有图片输入（支持多图）
-    const imageUrls = mode === 'create' && 'imageUrls' in context ? context.imageUrls || [] : []
+    // 检查是否有图片输入（支持多图，create/reference 均可携带参考图片）
+    const imageUrls = 'imageUrls' in context ? context.imageUrls || [] : []
     const hasImages = imageUrls.length > 0
 
     let fullContent: string

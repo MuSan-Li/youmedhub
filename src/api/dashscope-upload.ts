@@ -67,14 +67,13 @@ export async function getUploadPolicy(
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    throw new Error(error.error?.message || `获取上传凭证失败: ${response.status}`)
+    throw new Error(useLocale().t('api.getPolicyFail', { status: response.status }))
   }
 
   const data: UploadPolicyResponse = await response.json()
 
   if (!data.data) {
-    throw new Error('上传凭证响应格式错误')
+    throw new Error(useLocale().t('api.policyInvalid'))
   }
 
   return data.data
@@ -162,7 +161,7 @@ export async function uploadToDashScope(
   const apiKey = options?.apiKey || import.meta.env.VITE_DASHSCOPE_API_KEY
 
   if (!apiKey) {
-    throw new Error('未配置百炼 API Key，请检查环境变量 VITE_DASHSCOPE_API_KEY')
+    throw new Error(useLocale().t('analyze.apiKeyRequired'))
   }
 
   // 1. 获取上传凭证
@@ -172,7 +171,7 @@ export async function uploadToDashScope(
   const maxSizeBytes = policy.max_file_size_mb * 1024 * 1024
   if (file.size > maxSizeBytes) {
     throw new Error(
-      `文件过大（${formatFileSize(file.size)}），请小于 ${policy.max_file_size_mb}MB`
+      useLocale().t('api.fileTooLarge', { size: formatFileSize(file.size), max: policy.max_file_size_mb })
     )
   }
 

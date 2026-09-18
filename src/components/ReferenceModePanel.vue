@@ -54,7 +54,7 @@ const enableThinkingModel = computed({
 
 // 模型选择
 const selectedModelId = computed({
-  get: () => va.selectedModel.value?.id || 'qwen3.8-flash',
+  get: () => va.selectedModel.value.id,
   set: (val: string) => {
     const model = AVAILABLE_MODELS.find(m => m.id === val)
     if (model) {

@@ -352,4 +352,11 @@ export const zh = {
   'privacy.rights.body': '你可以随时导出或删除你的收藏数据，注销账号或联系我们删除你的信息。',
   'privacy.contact.title': '联系我们',
   'privacy.contact.body': '如有隐私相关问题，请通过 GitHub 仓库 Issues 联系我们。',
+
+  // 补充：上传/API 与生成拼接
+  'api.getPolicyFail': '获取上传凭证失败: {status}',
+  'api.policyInvalid': '上传凭证响应格式错误',
+  'create.topicTypeValue': '视频类型：{value}',
+  'create.topicRequirementLabel': '视频要求：',
+  'create.candidateError': '方案 {n}：{message}',
 }

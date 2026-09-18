@@ -38,9 +38,26 @@ const viewMode = ref<'markdown' | 'table'>('table')
 // 分析模式
 const analysisMode = ref<AnalysisMode>('analyze')
 
+// localStorage 在「阻止所有 Cookie」等场景下访问即抛 SecurityError，需防御
+function readLocalStorage(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writeLocalStorage(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // 存储不可用时仅跳过持久化
+  }
+}
+
 // API Key（优先从 localStorage 读取，其次从环境变量读取）
 const dashscopeApiKey = ref(
-  localStorage.getItem('dashscope_api_key') ||
+  readLocalStorage('dashscope_api_key') ||
   import.meta.env.VITE_DASHSCOPE_API_KEY ||
   ''
 )
@@ -60,7 +77,7 @@ const isThinking = ref(false)
 // 配置栏是否展开（创建模式下开始生成前展开，生成后收起）
 const isConfigPanelExpanded = ref(true)
 
-const playPreviewAudio = ref(localStorage.getItem('play_preview_audio') !== 'false')
+const playPreviewAudio = ref(readLocalStorage('play_preview_audio') !== 'false')
 
 const hasVideo = computed(() => !!videoFile.value || !!videoUrl.value)
 const hasResult = computed(() => !!markdownContent.value)
@@ -97,7 +114,7 @@ const hasValidApiKey = computed(() => {
 export function useVideoAnalysis() {
   function setDashscopeApiKey(key: string) {
     dashscopeApiKey.value = key
-    localStorage.setItem('dashscope_api_key', key)
+    writeLocalStorage('dashscope_api_key', key)
   }
 
   function setSelectedModel(model: ModelConfig) {
@@ -232,7 +249,7 @@ export function useVideoAnalysis() {
 
   function setPlayPreviewAudio(enabled: boolean) {
     playPreviewAudio.value = enabled
-    localStorage.setItem('play_preview_audio', String(enabled))
+    writeLocalStorage('play_preview_audio', String(enabled))
   }
 
   // 释放本地预览 URL

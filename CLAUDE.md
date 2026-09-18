@@ -80,7 +80,7 @@ src/
 │   ├── zh.ts                    # 中文语言包（字典键的基准类型）
 │   └── en.ts                    # 英文语言包（typeof zh 强制键一致）
 ├── config/
-│   └── models.ts                # 模型配置
+│   └── models.ts                # 模型配置（qwen3.8/qwen3.7 系列，见「AI 模型约束」）
 ├── lib/
 │   ├── utils.ts                 # cn() 类名合并
 │   ├── supabase.ts              # Supabase 客户端
@@ -172,7 +172,7 @@ src/
 ```typescript
 // 正确示例
 const body = {
-  model: "qwen3.5-plus",
+  model: "qwen3.8-max",
   messages: [...],
   stream: true,
   stream_options: { include_usage: true },
@@ -210,8 +210,9 @@ const body = {
 - `src/lib/adsense.ts` - 发布商 ID 读取（`VITE_ADSENSE_CLIENT`）+ 脚本懒加载单例；未配置 `ca-pub-` 前缀 ID 时完全不加载、不渲染
 - `src/components/AdSlot.vue` - 广告位组件，挂载时渲染 `<ins>` 并 push（SPA 路由切换自动刷新）；加载失败静默隐藏
 - 广告位：首页底部（`ADSENSE_SLOT_HOME`）、分析/生成结果区底部（`ADSENSE_SLOT_RESULT`），避开操作区
-- `public/ads.txt` - 授权文件（需替换为自己的 pub- ID）
+- `public/ads.txt` - 授权文件
 - `/privacy` 隐私政策页（AdSense 审核必备，双语）
+- **发布商 ID 存在三处**，更换账号需同步修改：`index.html`（脚本 URL + meta 标记）、`public/ads.txt`、`src/lib/adsense.ts`（回退值）
 - 新增环境变量后需在 Vercel 项目设置中同步配置
 
 ### SEO

@@ -22,6 +22,7 @@ export interface ReferencePromptContext {
   topic: string
   referenceScript: string
   additionalNotes?: string
+  imageUrls?: string[] // 参考图片（多图支持）
 }
 
 // 通用约束（所有模式共享）
@@ -243,11 +244,20 @@ function buildReferencePromptContextSection(context: ReferencePromptContext): st
     throw new Error('参考生成模式缺少参考脚本')
   }
 
+  // 参考图片（可选）
+  let imageSection = ''
+  if (context.imageUrls && context.imageUrls.length > 0) {
+    imageSection = context.imageUrls
+      .map((url, index) => `- 参考图片 ${index + 1}：${url}`)
+      .join('\n')
+    imageSection = `\n${imageSection}\n`
+  }
+
   return `
 # 用户输入信息（必须使用）
 
 - 视频要求：${topic}
-- 补充说明：${formatOptionalField(context.additionalNotes)}
+- 补充说明：${formatOptionalField(context.additionalNotes)}${imageSection}
 
 ## 参考脚本（请学习风格，不可照搬内容）
 \`\`\`markdown

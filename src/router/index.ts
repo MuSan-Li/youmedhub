@@ -110,17 +110,27 @@ const router = createRouter({
   ],
 })
 
-// 路由守卫
-router.beforeEach(async (to, _from, next) => {
-  // 设置页面标题与描述（Google 可执行 JS，动态 meta 对其可见）
-  const { t } = useLocale()
-  const rawTitle = to.meta.title || 'YouMedHub'
+// 根据当前路由与界面语言刷新页面标题和 meta（Google 可执行 JS，动态 meta 对其可见）
+function refreshRouteMeta(path: string, titleKey: unknown, descriptionKey: unknown) {
+  const { t, locale } = useLocale()
+  const rawTitle = titleKey || 'YouMedHub'
   document.title = `${t(String(rawTitle))} - YouMedHub`
 
-  setMeta('description', to.meta.description ? t(String(to.meta.description)) : null)
+  // 无路由级描述时回退到首页描述，避免 meta 被删空
+  const description = descriptionKey ? t(String(descriptionKey)) : t('seo.home')
+  setMeta('description', description)
   setMetaProperty('og:title', document.title)
-  setMetaProperty('og:url', `${SITE_URL}${to.path}`)
-  setLinkCanonical(`${SITE_URL}${to.path}`)
+  setMetaProperty('og:description', description)
+  setMetaProperty('og:url', `${SITE_URL}${path}`)
+  setMetaProperty('og:locale', locale.value === 'zh' ? 'zh_CN' : 'en_US')
+  setLinkCanonical(`${SITE_URL}${path}`)
+}
+
+// 路由守卫
+router.beforeEach(async (to, _from, next) => {
+  // /index.html 直达路径规范化为 /
+  const normalizedPath = to.path.replace(/\/index\.html$/, '') || '/'
+  refreshRouteMeta(normalizedPath, to.meta.title, to.meta.description)
 
   // 检查登录状态
   if (to.meta.requiresAuth) {
@@ -132,6 +142,13 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   next()
+})
+
+// 语言切换时刷新当前路由的标题/meta（切换不触发路由导航）
+window.addEventListener('app:locale-change', () => {
+  const current = router.currentRoute.value
+  const normalizedPath = current.path.replace(/\/index\.html$/, '') || '/'
+  refreshRouteMeta(normalizedPath, current.meta.title, current.meta.description)
 })
 
 export default router

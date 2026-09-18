@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { generateWithImages } from '@/api/analysis'
 import { uploadToTemporaryFile } from '@/api/temporaryFile'
 import { useVideoAnalysis } from '@/composables/useVideoAnalysis'
@@ -134,18 +134,23 @@ const scriptCountNumber = computed(() => {
   return Math.min(5, Math.max(1, num))
 })
 
+// 提示清除定时器（切换多次时先清旧定时器，避免新提示被提前清掉）
+let modelChangeTimer: ReturnType<typeof setTimeout> | null = null
+
 const selectedModelId = computed({
-  get: () => va.selectedModel.value?.id || 'qwen3.8-flash',
+  get: () => va.selectedModel.value.id,
   set: (val: string) => {
-    const oldModelId = va.selectedModel.value?.id
+    const oldModelId = va.selectedModel.value.id
     const model = AVAILABLE_MODELS.find(m => m.id === val)
     if (model) {
       va.setSelectedModel(model)
-      // 如果模型变化且有已上传的文件，显示提示
+      // 如果模型变化且有已上传的文件，显示提示（5 秒后自动清除）
       if (oldModelId && oldModelId !== val && va.imageUrls.value.length > 0) {
         modelChangeMessage.value = t('panel.modelChangedImages')
-        setTimeout(() => {
+        if (modelChangeTimer) clearTimeout(modelChangeTimer)
+        modelChangeTimer = setTimeout(() => {
           modelChangeMessage.value = ''
+          modelChangeTimer = null
         }, 5000)
       }
     }
@@ -213,6 +218,15 @@ function cancelOverwrite() {
 function handleTextareaInput() {
   hasUserEdited.value = true
 }
+
+// 语言切换后刷新模板标题语言（仅限用户未编辑过内容时；已填写的内容优先保留）
+watch(locale, () => {
+  if (hasUserEdited.value) return
+  const config = videoTypes.value.find(item => item.key === selectedVideoType.value)
+  if (config) {
+    requirementText.value = config.template
+  }
+})
 
 function parseTextToFields(text: string, fields: Array<{ key: string; label: string }>): Record<string, string> {
   const result: Record<string, string> = {}
@@ -292,7 +306,7 @@ async function handleAiOptimize() {
   try {
     // 1. 上传图片到临时存储（如果有的话，与模型绑定）
     const uploadedImageUrls: string[] = []
-    const model = va.selectedModel.value?.id || 'qwen3.8-flash'
+    const model = va.selectedModel.value.id
     const apiKey = va.currentApiKey.value
     if (!apiKey) {
       throw new Error(t('analyze.apiKeyRequired'))
@@ -319,7 +333,7 @@ async function handleAiOptimize() {
       // 有图片，使用多模态 API
       await generateWithImages({
         apiKey: va.currentApiKey.value,
-        model: 'qwen3.8-flash',
+        model,
         prompt,
         imageUrls: uploadedImageUrls,
         onChunk: (chunk) => {
@@ -333,7 +347,7 @@ async function handleAiOptimize() {
       const { generateText } = await import('@/api/analysis')
       await generateText({
         apiKey: va.currentApiKey.value,
-        model: 'qwen3.8-flash',
+        model,
         prompt,
         onChunk: (chunk) => {
           streamedContent += chunk
@@ -506,7 +520,7 @@ defineExpose({
     <div class="space-y-2">
       <Label class="text-xs font-normal text-muted-foreground">{{ t('analyze.modelLabel') }}</Label>
       <div class="flex items-center gap-3">
-        <Select v-model="selectedModelId" class="flex-1">
+        <Select v-model="selectedModelId" class="flex-1" :disabled="va.isAnalyzing.value || aiOptimizing">
           <SelectTrigger class="h-8 w-full">
             <SelectValue :placeholder="t('analyze.selectModel')" />
           </SelectTrigger>

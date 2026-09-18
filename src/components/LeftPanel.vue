@@ -67,8 +67,8 @@ function handleStartAnalysis() {
 
 function buildGenerateTopic(params: GenerateParams): string {
   return [
-    `${t('create.topicType')}：${params.videoTypeLabel || params.videoType}`,
-    `${t('create.topicRequirement')}：`,
+    t('create.topicTypeValue', { value: params.videoTypeLabel || params.videoType }),
+    t('create.topicRequirementLabel'),
     params.requirementText,
   ].filter(Boolean).join('\n')
 }
@@ -103,7 +103,7 @@ async function handleStartGenerate() {
   try {
     // 上传多张图片（使用百炼临时存储，与模型绑定）
     const uploadedImageUrls: string[] = []
-    const model = va.selectedModel.value?.id || 'qwen3.8-flash'
+    const model = va.selectedModel.value.id
     const apiKey = va.currentApiKey.value
     if (!apiKey) {
       throw new Error(t('analyze.apiKeyRequired'))
@@ -136,7 +136,7 @@ async function handleStartGenerate() {
 
     const commonOptions = {
       apiKey: va.currentApiKey.value,
-      model: (va.selectedModel.value?.id || 'qwen3.8-flash') as AIModel,
+      model: va.selectedModel.value.id as AIModel,
       locale: locale.value,
       params: {
         enableThinking: va.enableThinking.value,
@@ -164,10 +164,12 @@ async function handleStartGenerate() {
             context: {
               topic,
               referenceScript: params.referenceScript || '',
+              imageUrls: uploadedImageUrls,
             },
             customPrompt: buildPromptByMode('reference', {
               topic,
               referenceScript: params.referenceScript || '',
+              imageUrls: uploadedImageUrls,
             }, locale.value) + variantHint,
             onStream: (chunk: string) => {
               // 收到正式内容时，思考已完成
@@ -241,7 +243,7 @@ async function handleStartGenerate() {
         successCount += 1
       } else {
         const message = result.reason instanceof Error ? result.reason.message : t('create.fail')
-        errorMessages.push(`${t('create.candidate', { n: i + 1 })}：${message}`)
+        errorMessages.push(t('create.candidateError', { n: i + 1, message }))
       }
     })
 
