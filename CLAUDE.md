@@ -246,7 +246,7 @@ const body = {
 ### AI 模型约束
 
 - **仅使用阿里百炼 qwen 系列模型**，模型列表按页面区分（见 `src/config/models.ts`）：
-  - **视频拆解页（/analyze）**：`qwen3.8-flash`（默认）、`qwen3.8-omni-flash`（全模态，**原生理解视频画面与音频**，免 ASR 前置转写）
+  - **视频拆解页（/analyze）**：`qwen3.8-omni-flash`（默认，全模态，**原生理解视频画面与音频**，免 ASR 前置转写）、`qwen3.8-flash`
   - **脚本生成页（/create）**：`qwen3.8-max`（默认）、`qwen3.8-flash`
   - 面板挂载时若全局选中模型不在本页列表，自动校正为本页默认
 - 多模态（图片理解）：`qwen-vl-max`

@@ -78,8 +78,8 @@ export function supportsNativeAudio(modelId: string): boolean {
 /**
  * 视频拆解页（/analyze）可选模型与默认
  */
-export const ANALYZE_MODEL_IDS = ['qwen3.8-flash', 'qwen3.8-omni-flash'] as const
-export const ANALYZE_DEFAULT_MODEL_ID = 'qwen3.8-flash'
+export const ANALYZE_MODEL_IDS = ['qwen3.8-omni-flash', 'qwen3.8-flash'] as const
+export const ANALYZE_DEFAULT_MODEL_ID = 'qwen3.8-omni-flash'
 
 /**
  * 脚本生成页（/create）可选模型与默认
