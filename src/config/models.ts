@@ -9,13 +9,21 @@ export interface ModelConfig {
   provider: 'aliyun'
   providerName: string
   description: string
-  capabilities: ('video' | 'image' | 'text')[]
+  capabilities: ('video' | 'image' | 'audio' | 'text')[]
 }
 
 /**
  * 可选模型列表
  */
 export const AVAILABLE_MODELS: ModelConfig[] = [
+  {
+    id: 'qwen3.8-omni-flash',
+    name: 'Qwen3.8 Omni Flash',
+    provider: 'aliyun',
+    providerName: '阿里百炼',
+    description: '通义千问 3.8 全模态版（原生理解视频画面与音频）',
+    capabilities: ['video', 'image', 'audio', 'text'],
+  },
   {
     id: 'qwen3.8-flash',
     name: 'Qwen3.8 Flash',
@@ -60,7 +68,15 @@ export const MODELS_BY_PROVIDER = {
 /**
  * 默认模型 ID
  */
-export const DEFAULT_MODEL_ID = 'qwen3.8-flash'
+export const DEFAULT_MODEL_ID = 'qwen3.8-omni-flash'
+
+/**
+ * 是否原生理解视频音频轨（omni 系列）
+ * 此类模型自带听觉，无需 ASR 前置转写
+ */
+export function supportsNativeAudio(modelId: string): boolean {
+  return modelId.includes('omni')
+}
 
 /**
  * 根据 ID 获取模型配置

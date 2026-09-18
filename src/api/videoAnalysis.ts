@@ -26,7 +26,7 @@ export type { ModelConfig }
 
 // AI 模型类型
 // 注意：qwen3.7-max 为纯文本模型，不支持视频/图片输入，不在此列
-export type AIModel = 'qwen3.8-flash' | 'qwen3.8-max' | 'qwen3.7-flash' | 'qwen3.7-plus'
+export type AIModel = 'qwen3.8-omni-flash' | 'qwen3.8-flash' | 'qwen3.8-max' | 'qwen3.7-flash' | 'qwen3.7-plus'
 
 // 流式输出回调类型
 export type StreamCallback = (chunk: string) => void

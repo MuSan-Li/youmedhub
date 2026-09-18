@@ -6,7 +6,7 @@ import { analyzeVideo, type AIModel } from '@/api/videoAnalysis'
 import { uploadToTemporaryFile } from '@/api/temporaryFile'
 import { logUsage } from '@/api/usageLog'
 import { transcribeVideo, type TranscriptSentence } from '@/api/asr'
-import { AVAILABLE_MODELS } from '@/config/models'
+import { AVAILABLE_MODELS, supportsNativeAudio } from '@/config/models'
 import { useLocale } from '@/composables/useLocale'
 import { useModelSelect } from '@/composables/useModelSelect'
 import { extractErrorMessage } from '@/lib/errors'
@@ -125,8 +125,9 @@ async function startAnalysis() {
     va.viewMode.value = 'markdown'
 
     // 3. ASR 前置转写（qwen3-asr-flash，浏览器本地提取音轨；失败降级：不注入转写，照常分析）
+    // omni 系列原生理解视频音频轨，跳过 ASR
     let audioTranscript: TranscriptSentence[] | undefined
-    if (va.videoFile.value) {
+    if (va.videoFile.value && !supportsNativeAudio(va.selectedModel.value.id)) {
       isTranscribing.value = true
       try {
         audioTranscript = await transcribeVideo(va.videoFile.value, va.currentApiKey.value)

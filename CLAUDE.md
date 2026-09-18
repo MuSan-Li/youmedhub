@@ -246,11 +246,12 @@ const body = {
 ### AI 模型约束
 
 - **仅使用阿里百炼 qwen 系列模型**
-- 文本生成：`qwen3.8-flash`（快速）、`qwen3.8-max`（高质量，支持长视频解析），上一代 `qwen3.7-flash` / `qwen3.7-plus`
+- 默认模型：`qwen3.8-omni-flash`（全模态，**原生理解视频画面与音频**，视频拆解时免 ASR 前置转写）
+- 其他：`qwen3.8-flash`（快速）、`qwen3.8-max`（高质量，支持长视频解析），上一代 `qwen3.7-flash` / `qwen3.7-plus`
 - 多模态（图片理解）：`qwen-vl-max`
-- **语音转写专用**：`qwen3-asr-flash`（见 `src/api/asr.ts`，OpenAI 兼容接口）——qwen3.x 系列视频输入为抽帧视觉、不含音频轨，台词列依赖 ASR 前置转写注入提示词。实现：浏览器 WebAudio 提取音轨（decodeAudioData + OfflineAudioContext 重采样 16k mono）→ 30s 分块 WAV → 分批并发转写（块偏移即时间戳）
+- **语音转写专用**：`qwen3-asr-flash`（见 `src/api/asr.ts`，OpenAI 兼容接口）——非 omni 模型的视频输入为抽帧视觉、不含音频轨，台词列依赖 ASR 前置转写注入提示词（`supportsNativeAudio()` 判断是否跳过）。实现：浏览器 WebAudio 提取音轨（decodeAudioData + OfflineAudioContext 重采样 16k mono）→ 30s 分块 WAV → 分批并发转写（块偏移即时间戳）
 - **禁止使用**：`qwen3.7-max`（纯文本，不支持视频/图片输入）、qwen2.5、qwen3、qwen3.5、deepseek 等其他模型系列
-- 模型选择 UI 展示 qwen3.8-flash、qwen3.8-max、qwen3.7-flash、qwen3.7-plus
+- 模型选择 UI 展示 qwen3.8-omni-flash（默认）、qwen3.8-flash、qwen3.8-max、qwen3.7-flash、qwen3.7-plus
 
 ## 已知限制
 
